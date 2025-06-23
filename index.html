@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Structural Engineering Trivia</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      color: #003366;
+      max-width: 600px;
+      margin: auto;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+      color: #003366;
+    }
+    .question-box {
+      background: #ffffff;
+      border: 2px solid #003366;
+      padding: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 2px 2px 10px #ccc;
+      margin-bottom: 1rem;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      background-color: #007acc;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
+    .code-ref {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: #666;
+    }
+    .result {
+      font-weight: bold;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Structural Engineering Trivia</h1>
+  <div class="question-box">
+    <div id="question">Loading question...</div>
+    <div id="answers"></div>
+    <div class="code-ref" id="codeRef"></div>
+    <div class="result" id="result"></div>
+    <button id="nextBtn" style="display:none;">Next Question</button>
+  </div>
+
+  <script>
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlxPNJARM2ZnIKMPvCue9POaEWokF9IeTHeP7eMIbck-oB5xBN9LdbrLD8uREvExBDe7ggPNipa63w/pub?output=csv";
+
+    let questions = [];
+    let currentQuestion = 0;
+
+    fetch(sheetURL)
+      .then(response => response.text())
+      .then(data => {
+        const rows = data.split('\n').slice(1);
+        questions = rows.map(row => {
+          const cols = row.split(',');
+          return {
+            question: cols[0],
+            correct: cols[1],
+            codeRef: cols[2],
+            wrong: [cols[3], cols[4], cols[5]]
+          };
+        });
+        loadQuestion();
+      });
+
+    function loadQuestion() {
+      const q = questions[currentQuestion];
+      const allAnswers = [q.correct, ...q.wrong].sort(() => 0.5 - Math.random());
+
+      document.getElementById("question").innerText = q.question;
+      document.getElementById("codeRef").innerText = `Code Reference: ${q.codeRef}`;
+      document.getElementById("result").innerText = "";
+      document.getElementById("answers").innerHTML = "";
+
+      allAnswers.forEach(answer => {
+        const btn = document.createElement("button");
+        btn.innerText = answer;
+        btn.onclick = () => handleAnswer(answer === q.correct);
+        document.getElementById("answers").appendChild(btn);
+      });
+    }
+
+    function handleAnswer(isCorrect) {
+      document.getElementById("result").innerText = isCorrect ? "✅ Correct!" : "❌ Incorrect";
+      document.querySelectorAll("button").forEach(btn => btn.disabled = true);
+      document.getElementById("nextBtn").style.display = "block";
+    }
+
+    document.getElementById("nextBtn").addEventListener("click", () => {
+      currentQuestion = (currentQuestion + 1) % questions.length;
+      loadQuestion();
+      document.getElementById("nextBtn").style.display = "none";
+    });
+  </script>
+</body>
+</html>
