@@ -54,4 +54,90 @@
       background-color: #007acc;
       color: white;
       border: none;
-      border-radius: 5
+      border-radius: 5px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #005fa3;
+    }
+
+    .score-box {
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 1rem;
+    }
+
+    #adminPanel {
+      display: none;
+      margin-top: 2rem;
+      padding: 1rem;
+      background-color: #e6f0ff;
+      border: 1px solid #007acc;
+      border-radius: 8px;
+    }
+
+    .admin-row {
+      border-bottom: 1px solid #ccc;
+      padding: 0.5rem 0;
+    }
+
+    .admin-row button {
+      width: auto;
+      margin-left: 10px;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .admin-button-link {
+      background: none;
+      color: #007acc;
+      font-size: 0.9rem;
+      border: none;
+      cursor: pointer;
+      text-decoration: underline;
+      margin: auto;
+      display: block;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Structural Trivia</h1>
+
+  <div class="filters">
+    <select id="difficultyFilter">
+      <option value="">All Difficulties</option>
+      <option value="Easy">Easy</option>
+      <option value="Medium">Medium</option>
+      <option value="Challenging">Challenging</option>
+    </select>
+    <select id="codebookFilter">
+      <option value="">All Code Books</option>
+      <option value="ACI 318">ACI 318</option>
+      <option value="ASCE 7">ASCE 7</option>
+      <option value="TMS 402">TMS 402</option>
+    </select>
+  </div>
+
+  <div class="score-box" id="scoreBox">Score: 0 / 0</div>
+
+  <div class="question-box">
+    <div id="question">Loading...</div>
+    <div class="code-ref" id="codeMeta"></div>
+    <div id="answers"></div>
+    <div id="result" style="font-weight:bold; margin-top:10px;"></div>
+    <button id="nextBtn" style="display:none;">Next Question</button>
+  </div>
+
+  <div id="adminPanel">
+    <h2>Admin Panel</h2>
+    <div id="adminList">Loading questions...</div>
+    <button onclick="loadAdminPanel()">🔄 Refresh Submissions</button>
+  </div>
+
+  <button class="admin-button-link" onclick="requestAdmin()">Admin Panel</button>
+
+  <script>
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlxPNJARM2ZnIKMPvCue9POaEWokF9IeTHeP7eMIbck-oB5xBN9LdbrLD8uREvExBDe7ggPNipa63w/pub?output=csv";
+    const scriptWebAppURL = 'https://script.google.com/macro
