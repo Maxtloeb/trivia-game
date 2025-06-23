@@ -1,20 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Structural Engineering Trivia</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f4f4f4;
       color: #003366;
-      max-width: 600px;
+      max-width: 700px;
       margin: auto;
       padding: 2rem;
     }
     h1 {
       text-align: center;
       color: #003366;
+    }
+    .filters {
+      display: flex;
+      gap: 1rem;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    select {
+      padding: 0.5rem;
+      font-size: 1rem;
     }
     .question-box {
       background: #ffffff;
@@ -52,10 +63,26 @@
 </head>
 <body>
   <h1>Structural Engineering Trivia</h1>
+
+  <div class="filters">
+    <select id="difficultyFilter">
+      <option value="">All Difficulties</option>
+      <option value="Easy">Easy</option>
+      <option value="Medium">Medium</option>
+      <option value="Challenging">Challenging</option>
+    </select>
+    <select id="codebookFilter">
+      <option value="">All Code Books</option>
+      <option value="ACI 318">ACI 318</option>
+      <option value="ASCE 7">ASCE 7</option>
+      <option value="TMS 402">TMS 402</option>
+    </select>
+  </div>
+
   <div class="question-box">
     <div id="question">Loading question...</div>
+    <div class="code-ref" id="codeMeta"></div>
     <div id="answers"></div>
-    <div class="code-ref" id="codeRef"></div>
     <div class="result" id="result"></div>
     <button id="nextBtn" style="display:none;">Next Question</button>
   </div>
@@ -63,53 +90,4 @@
   <script>
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlxPNJARM2ZnIKMPvCue9POaEWokF9IeTHeP7eMIbck-oB5xBN9LdbrLD8uREvExBDe7ggPNipa63w/pub?output=csv";
 
-    let questions = [];
-    let currentQuestion = 0;
-
-    fetch(sheetURL)
-      .then(response => response.text())
-      .then(data => {
-        const rows = data.split('\n').slice(1);
-        questions = rows.map(row => {
-          const cols = row.split(',');
-          return {
-            question: cols[0],
-            correct: cols[1],
-            codeRef: cols[2],
-            wrong: [cols[3], cols[4], cols[5]]
-          };
-        });
-        loadQuestion();
-      });
-
-    function loadQuestion() {
-      const q = questions[currentQuestion];
-      const allAnswers = [q.correct, ...q.wrong].sort(() => 0.5 - Math.random());
-
-      document.getElementById("question").innerText = q.question;
-      document.getElementById("codeRef").innerText = `Code Reference: ${q.codeRef}`;
-      document.getElementById("result").innerText = "";
-      document.getElementById("answers").innerHTML = "";
-
-      allAnswers.forEach(answer => {
-        const btn = document.createElement("button");
-        btn.innerText = answer;
-        btn.onclick = () => handleAnswer(answer === q.correct);
-        document.getElementById("answers").appendChild(btn);
-      });
-    }
-
-    function handleAnswer(isCorrect) {
-      document.getElementById("result").innerText = isCorrect ? "✅ Correct!" : "❌ Incorrect";
-      document.querySelectorAll("button").forEach(btn => btn.disabled = true);
-      document.getElementById("nextBtn").style.display = "block";
-    }
-
-    document.getElementById("nextBtn").addEventListener("click", () => {
-      currentQuestion = (currentQuestion + 1) % questions.length;
-      loadQuestion();
-      document.getElementById("nextBtn").style.display = "none";
-    });
-  </script>
-</body>
-</html>
+    let allQuestions
