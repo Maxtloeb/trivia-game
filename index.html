@@ -6,20 +6,13 @@
 <title>Structural Engineering Trivia</title>
 
 <style>
-  html {
-    box-sizing: border-box;
-    font-size: 16px;
-  }
-  *, *:before, *:after {
-    box-sizing: inherit;
-  }
+  /* Same styling as before (podcast blue/yellow etc.) */
   body {
     font-family: 'Segoe UI', Roboto, sans-serif;
     background: radial-gradient(circle at top, #f0f4f8, #dbe9f4);
     color: #002b45;
     margin: 0;
     padding: 1.5rem;
-    max-width: 100%;
     max-width: 800px;
     margin-left: auto;
     margin-right: auto;
@@ -30,25 +23,25 @@
     color: #003366;
     margin-bottom: 1.2rem;
   }
-  .filters {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-  }
-  @media (min-width: 600px) {
-    .filters {
-      flex-direction: row;
-    }
-  }
-  select {
+  select, button {
     padding: 0.6rem;
     font-size: 1rem;
     border-radius: 8px;
     border: 1px solid #bbb;
     background-color: #fefefe;
     color: #002b45;
-    width: 100%;
+    margin: 0.5rem 0;
+  }
+  button {
+    cursor: pointer;
+    background-color: #007acc;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    transition: background 0.3s ease;
+  }
+  button:hover {
+    background-color: #005fa3;
   }
   .question-box {
     background: white;
@@ -57,182 +50,234 @@
     padding: 1.5rem;
     box-shadow: 0 8px 16px rgba(0,0,0,0.1);
     margin-bottom: 1.5rem;
-    transition: transform 0.2s ease;
-  }
-  .question-box:hover {
-    transform: scale(1.01);
   }
   .code-ref {
     margin-top: 1rem;
     font-size: 0.9rem;
     color: #666;
   }
-  button.answer {
-    display: block;
-    width: 100%;
-    padding: 0.85rem;
-    margin: 0.5rem 0;
-    background-color: #007acc;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background 0.3s ease;
-  }
-  button.answer:hover {
-    background-color: #005fa3;
-  }
-  #score {
+  #score, #summary {
     font-weight: bold;
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     font-size: 1.1rem;
     color: #003366;
   }
 </style>
 </head>
 <body>
-  <h1>Structural Engineering Trivia</h1>
+<h1>Structural Engineering Trivia</h1>
 
-  <div class="filters">
-    <select id="difficultyFilter" aria-label="Filter by Difficulty">
-      <option value="">All Difficulty</option>
-      <option value="easy">Easy</option>
-      <option value="medium">Medium</option>
-      <option value="challenging">Challenging</option>
-    </select>
+<div id="setup">
+  <label for="difficultyFilter">Filter Difficulty:</label>
+  <select id="difficultyFilter" aria-label="Filter by Difficulty">
+    <option value="">All Difficulty</option>
+    <option value="easy">Easy</option>
+    <option value="medium">Medium</option>
+    <option value="challenging">Challenging</option>
+  </select>
 
-    <select id="codebookFilter" aria-label="Filter by Code Book">
-      <option value="">All Code Books</option>
-      <option value="aci 318">ACI 318</option>
-      <option value="asce 7">ASCE 7</option>
-      <option value="tms 402">TMS 402</option>
-      <option value="aisc">AISC</option>
-      <option value="nds">NDS</option>
-      <option value="other">Other</option>
-    </select>
-  </div>
+  <label for="codebookFilter">Filter Code Book:</label>
+  <select id="codebookFilter" aria-label="Filter by Code Book">
+    <option value="">All Code Books</option>
+    <option value="aci 318">ACI 318</option>
+    <option value="asce 7">ASCE 7</option>
+    <option value="tms 402">TMS 402</option>
+    <option value="aisc">AISC</option>
+    <option value="nds">NDS</option>
+    <option value="other">Other</option>
+  </select>
 
-  <div id="score">Score: 0 / 0</div>
-  <div id="questionContainer"></div>
+  <label for="questionCount">Number of Questions:</label>
+  <select id="questionCount" aria-label="Select Number of Questions">
+    <option value="1">1</option>
+    <option value="10" selected>10</option>
+    <option value="20">20</option>
+  </select>
 
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script>
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlxPNJARM2ZnIKMPvCue9POaEWokF9IeTHeP7eMIbck-oB5xBN9LdbrLD8uREvExBDe7ggPNipa63w/pub?output=csv";
+  <button id="startBtn">Start Quiz</button>
+</div>
 
-    let allQuestions = [];
-    let filteredQuestions = [];
-    let currentIndex = 0;
-    let score = 0;
-    let total = 0;
+<div id="score" style="display:none;">Score: 0 / 0</div>
+<div id="questionContainer"></div>
+<div id="summary"></div>
 
-    function updateScoreDisplay() {
-      document.getElementById("score").innerText = `Score: ${score} / ${total}`;
-    }
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script>
+  const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlxPNJARM2ZnIKMPvCue9POaEWokF9IeTHeP7eMIbck-oB5xBN9LdbrLD8uREvExBDe7ggPNipa63w/pub?output=csv";
+  const APPS_SCRIPT_POST_URL = "YOUR_APPS_SCRIPT_WEB_APP_URL_HERE"; // Replace with your deployed Apps Script URL
 
-    function loadCSV() {
-      fetch(CSV_URL)
-        .then(response => {
-          if (!response.ok) throw new Error("Network response was not ok");
-          return response.text();
-        })
-        .then(text => {
-          console.log("CSV Raw Text:", text);
+  let allQuestions = [];
+  let quizQuestions = [];
+  let currentIndex = 0;
+  let score = 0;
+  let total = 0;
+  let playerAnswers = []; // Store {row, correct} for POST
 
-          const data = Papa.parse(text, { header: false }).data;
-          console.log("Parsed Data:", data);
-
-          allQuestions = data.slice(1).map(c => ({
-            question: c[0] || "",
-            correct: c[1] || "",
-            codeRef: c[2] || "",
-            incorrect: [c[3], c[4], c[5]].filter(x => x && x.trim() !== ""),
-            approved: (c[6] || "").trim().toLowerCase() === "yes",
-            difficulty: (c[7] || "").trim().toLowerCase(),
-            codebook: (c[8] || "").trim().toLowerCase()
-          }));
-
-          console.log("Final Questions:", allQuestions);
-
-          applyFilters();
-        })
-        .catch(error => {
-          console.error("Error loading CSV:", error);
-          document.getElementById("questionContainer").innerHTML = "<p style='color:red;'>Failed to load questions.</p>";
-        });
-    }
-
-    function applyFilters() {
-      const difficulty = document.getElementById("difficultyFilter").value.trim().toLowerCase();
-      const codebook = document.getElementById("codebookFilter").value.trim().toLowerCase();
-
-      filteredQuestions = allQuestions.filter(q => {
-        const matchDifficulty = !difficulty || q.difficulty === difficulty;
-        const matchCodebook = !codebook || q.codebook === codebook;
-        return q.approved && matchDifficulty && matchCodebook;
+  // Load all questions from CSV
+  function loadCSV() {
+    fetch(CSV_URL)
+      .then(res => {
+        if (!res.ok) throw new Error("Network error loading CSV");
+        return res.text();
+      })
+      .then(text => {
+        const data = Papa.parse(text, { header: false }).data;
+        allQuestions = data.slice(1).map((c, i) => ({
+          row: i + 2, // Sheet row index for this question (starts after header)
+          question: c[0] || "",
+          correct: c[1] || "",
+          codeRef: c[2] || "",
+          incorrect: [c[3], c[4], c[5]].filter(x => x && x.trim() !== ""),
+          approved: (c[6] || "").trim().toLowerCase() === "yes",
+          difficulty: (c[7] || "").trim().toLowerCase(),
+          codebook: (c[8] || "").trim().toLowerCase()
+        }));
+      })
+      .catch(e => {
+        alert("Error loading questions: " + e.message);
       });
+  }
 
-      currentIndex = 0;
-      score = 0;
-      total = filteredQuestions.length;
-      updateScoreDisplay();
-      loadQuestion();
+  function startQuiz() {
+    // Filter questions
+    const difficultyFilter = document.getElementById("difficultyFilter").value.trim().toLowerCase();
+    const codebookFilter = document.getElementById("codebookFilter").value.trim().toLowerCase();
+    const count = parseInt(document.getElementById("questionCount").value);
+
+    const filtered = allQuestions.filter(q => 
+      q.approved &&
+      (!difficultyFilter || q.difficulty === difficultyFilter) &&
+      (!codebookFilter || q.codebook === codebookFilter)
+    );
+
+    if (filtered.length === 0) {
+      alert("No questions match your filter.");
+      return;
     }
 
-    function loadQuestion() {
-      const container = document.getElementById("questionContainer");
-      if (filteredQuestions.length === 0) {
-        container.innerHTML = "<p>No questions match the filter.</p>";
+    // Shuffle filtered
+    quizQuestions = filtered.sort(() => Math.random() - 0.5).slice(0, count);
+
+    if (quizQuestions.length < count) {
+      alert(`Only ${quizQuestions.length} questions available for your filters.`);
+    }
+
+    currentIndex = 0;
+    score = 0;
+    playerAnswers = [];
+    total = quizQuestions.length;
+
+    document.getElementById("setup").style.display = "none";
+    document.getElementById("score").style.display = "block";
+    document.getElementById("summary").innerHTML = "";
+    updateScoreDisplay();
+    loadQuestion();
+  }
+
+  function updateScoreDisplay() {
+    document.getElementById("score").innerText = `Score: ${score} / ${total}`;
+  }
+
+  function loadQuestion() {
+    const container = document.getElementById("questionContainer");
+
+    if (currentIndex >= quizQuestions.length) {
+      finishQuiz();
+      return;
+    }
+
+    const q = quizQuestions[currentIndex];
+    let answers = [...q.incorrect, q.correct].sort(() => Math.random() - 0.5);
+
+    container.innerHTML = `
+      <div class="question-box">
+        <p>${q.question}</p>
+        <div class="code-ref">
+          <div><strong>Code Book:</strong> ${q.codebook.toUpperCase()}</div>
+          <div><strong>Reference:</strong> ${q.codeRef}</div>
+        </div>
+        <div id="answers"></div>
+      </div>
+    `;
+
+    const answersDiv = container.querySelector("#answers");
+    answersDiv.innerHTML = "";
+
+    answers.forEach(ans => {
+      const btn = document.createElement("button");
+      btn.className = "answer";
+      btn.textContent = ans;
+      btn.onclick = () => answerQuestion(q.row, ans === q.correct);
+      answersDiv.appendChild(btn);
+    });
+  }
+
+  function answerQuestion(row, correct) {
+    if (correct) score++;
+    playerAnswers.push({row, correct});
+    currentIndex++;
+    updateScoreDisplay();
+    loadQuestion();
+  }
+
+  function finishQuiz() {
+    document.getElementById("questionContainer").innerHTML = "";
+    document.getElementById("score").style.display = "none";
+
+    // Send answers batch to Apps Script backend
+    fetch(APPS_SCRIPT_POST_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answers: playerAnswers })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.status !== "success") {
+        alert("Error saving results: " + (data.message || "unknown"));
+        showSummary(null);
         return;
       }
+      showSummary(data.averages);
+    })
+    .catch(e => {
+      alert("Failed to save results: " + e.message);
+      showSummary(null);
+    });
+  }
 
-      const q = filteredQuestions[currentIndex];
-      let answers = [...q.incorrect, q.correct];
-      answers = answers.sort(() => Math.random() - 0.5);
+  function showSummary(averages) {
+    let html = `<h2>Quiz Complete!</h2>`;
+    html += `<p>Your Score: ${score} / ${total}</p>`;
 
-      container.innerHTML = `
-        <div class="question-box">
-          <p>${q.question}</p>
-          <div class="code-ref">
-            <div><strong>Code Book:</strong> ${q.codebook.toUpperCase()}</div>
-            <div><strong>Reference:</strong> ${q.codeRef}</div>
-          </div>
-          <div id="answers"></div>
-        </div>
-      `;
-
-      const answersDiv = container.querySelector("#answers");
-
-      answers.forEach(ans => {
-        const btn = document.createElement("button");
-        btn.className = "answer";
-        btn.textContent = ans;
-        btn.onclick = () => {
-          if (ans === q.correct) {
-            score++;
-            alert("Correct!");
-          } else {
-            alert(`Wrong! Correct answer: ${q.correct}`);
-          }
-          currentIndex++;
-          if (currentIndex >= filteredQuestions.length) {
-            alert(`Quiz complete! Your score: ${score} / ${total}`);
-            currentIndex = 0;
-            score = 0;
-          }
-          updateScoreDisplay();
-          loadQuestion();
-        };
-        answersDiv.appendChild(btn);
+    if (!averages) {
+      html += `<p>Sorry, could not load average scores.</p>`;
+    } else {
+      html += `<h3>Average Accuracy for Each Question</h3><ul>`;
+      playerAnswers.forEach(({row}) => {
+        const avg = averages[row];
+        const questionText = quizQuestions.find(q => q.row === row)?.question || "(unknown)";
+        html += `<li><strong>${questionText}</strong><br>Average correct rate: ${avg !== null ? (avg*100).toFixed(1) + "%" : "No data"}</li>`;
       });
+      html += "</ul>";
     }
 
-    window.onload = () => {
-      document.getElementById("difficultyFilter").addEventListener("change", applyFilters);
-      document.getElementById("codebookFilter").addEventListener("change", applyFilters);
-      loadCSV();
+    html += `<button id="restartBtn">Restart Quiz</button>`;
+
+    const summaryDiv = document.getElementById("summary");
+    summaryDiv.innerHTML = html;
+
+    document.getElementById("restartBtn").onclick = () => {
+      document.getElementById("summary").innerHTML = "";
+      document.getElementById("setup").style.display = "block";
     };
-  </script>
+  }
+
+  window.onload = () => {
+    loadCSV();
+
+    document.getElementById("startBtn").onclick = startQuiz;
+  };
+</script>
 </body>
 </html>
