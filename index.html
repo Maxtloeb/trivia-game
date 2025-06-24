@@ -1,19 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Structural Trivia</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Structural Engineering Trivia</title>
+
+<style>
   html {
     box-sizing: border-box;
     font-size: 16px;
   }
-
   *, *:before, *:after {
     box-sizing: inherit;
   }
-
   body {
     font-family: 'Segoe UI', Roboto, sans-serif;
     background: radial-gradient(circle at top, #f0f4f8, #dbe9f4);
@@ -21,28 +20,27 @@
     margin: 0;
     padding: 1.5rem;
     max-width: 100%;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
   }
-
   h1 {
     text-align: center;
     font-size: 2rem;
     color: #003366;
     margin-bottom: 1.2rem;
   }
-
   .filters {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
     margin-bottom: 1.5rem;
   }
-
   @media (min-width: 600px) {
     .filters {
       flex-direction: row;
     }
   }
-
   select {
     padding: 0.6rem;
     font-size: 1rem;
@@ -52,7 +50,6 @@
     color: #002b45;
     width: 100%;
   }
-
   .question-box {
     background: white;
     border: 2px solid #007acc;
@@ -62,17 +59,14 @@
     margin-bottom: 1.5rem;
     transition: transform 0.2s ease;
   }
-
   .question-box:hover {
     transform: scale(1.01);
   }
-
   .code-ref {
     margin-top: 1rem;
     font-size: 0.9rem;
     color: #666;
   }
-
   button.answer {
     display: block;
     width: 100%;
@@ -86,11 +80,9 @@
     cursor: pointer;
     transition: background 0.3s ease;
   }
-
   button.answer:hover {
     background-color: #005fa3;
   }
-
   #score {
     font-weight: bold;
     text-align: center;
@@ -98,262 +90,149 @@
     font-size: 1.1rem;
     color: #003366;
   }
-
-  #adminButton {
-    font-size: 0.9rem;
-    text-align: center;
-    color: #666;
-    margin-top: 2rem;
-    cursor: pointer;
-    background: none;
-    border: none;
-    text-decoration: underline;
-  }
-
-  #adminButton:hover {
-    color: #003366;
-  }
-
-  .admin-panel {
-    background: #fff9e6;
-    border: 1px solid #f9d06c;
-    border-radius: 10px;
-    padding: 1rem;
-    margin-top: 2rem;
-  }
-
-  .approve-btn, .reject-btn {
-    font-size: 0.85rem;
-    margin-left: 0.5rem;
-    padding: 0.4rem 0.7rem;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-
-  .approve-btn {
-    background-color: #28a745;
-    color: white;
-  }
-
-  .reject-btn {
-    background-color: #dc3545;
-    color: white;
-  }
-
-  /* Form Enhan*
-
-
+</style>
 </head>
 <body>
-  <h1>Structural Trivia</h1>
+  <h1>Structural Engineering Trivia</h1>
 
   <div class="filters">
-    <select id="difficultyFilter">
-      <option value="">All Difficulties</option>
-      <option value="Easy">Easy</option>
-      <option value="Medium">Medium</option>
-      <option value="Challenging">Challenging</option>
+    <select id="difficultyFilter" aria-label="Filter by Difficulty">
+      <option value="">All Difficulty</option>
+      <option value="easy">Easy</option>
+      <option value="medium">Medium</option>
+      <option value="challenging">Challenging</option>
     </select>
-    <select id="codebookFilter">
+
+    <select id="codebookFilter" aria-label="Filter by Code Book">
       <option value="">All Code Books</option>
-      <option value="ACI 318">ACI 318</option>
-      <option value="ASCE 7">ASCE 7</option>
-      <option value="TMS 402">TMS 402</option>
-      <option value="AISC">AISC</option>
-      <option value="NDS">NDS</option>
-      <option value="IBC">IBC</option>
-      <option value="Other">Other</option>
-  </select>
-
+      <option value="aci 318">ACI 318</option>
+      <option value="asce 7">ASCE 7</option>
+      <option value="tms 402">TMS 402</option>
+      <option value="aisc">AISC</option>
+      <option value="nds">NDS</option>
+      <option value="other">Other</option>
+    </select>
   </div>
 
-  <div class="score-box" id="scoreBox">Score: 0 / 0</div>
+  <div id="score">Score: 0 / 0</div>
+  <div id="questionContainer"></div>
 
-  <div class="question-box">
-    <div id="question">Loading...</div>
-    <div class="code-ref" id="codeMeta"></div>
-    <div id="answers"></div>
-    <div id="result" style="font-weight:bold; margin-top:10px;"></div>
-    <button id="nextBtn" style="display:none;">Next Question</button>
-  </div>
-
-  <div id="adminPanel">
-    <h2>Admin Panel</h2>
-    <div id="adminList">Loading questions...</div>
-    <button onclick="loadAdminPanel()">🔄 Refresh Submissions</button>
-  </div>
-
-  <button class="admin-button-link" onclick="requestAdmin()">Admin Panel</button>
-
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlxPNJARM2ZnIKMPvCue9POaEWokF9IeTHeP7eMIbck-oB5xBN9LdbrLD8uREvExBDe7ggPNipa63w/pub?output=csv";
-    const scriptWebAppURL = 'https://script.google.com/macros/s/AKfycbzvU6MHnpCNus_53HbtmfYCZFhBp5rATmFIE-Pb6WBjE8EGo26VxNmEjxKcJ6Ccp89A/exec';
-    const adminPassword = "Structure3D";
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlxPNJARM2ZnIKMPvCue9POaEWokF9IeTHeP7eMIbck-oB5xBN9LdbrLD8uREvExBDe7ggPNipa63w/pub?output=csv";
 
-    let allQuestions = [], filteredQuestions = [];
-    let currentIndex = 0, score = 0, total = 0;
+    let allQuestions = [];
+    let filteredQuestions = [];
+    let currentIndex = 0;
+    let score = 0;
+    let total = 0;
 
     function updateScoreDisplay() {
-      document.getElementById("scoreBox").innerText = `Score: ${score} / ${total}`;
-    }
-
-function applyFilters() {
-  const difficulty = document.getElementById("difficultyFilter").value.trim().toLowerCase();
-  const codebook = document.getElementById("codebookFilter").value.trim().toLowerCase();
-
-  filteredQuestions = allQuestions.filter(q => {
-    const qDifficulty = (q.difficulty || "").trim().toLowerCase();
-    const qCodebook = (q.codebook || "").trim().toLowerCase();
-    const qApproved = String(q.approved).toLowerCase() === "true";
-
-    const matchDifficulty = !difficulty || qDifficulty === difficulty;
-    const matchCodebook = !codebook || qCodebook === codebook;
-
-    return matchDifficulty && matchCodebook && qApproved;
-  });
-
-  currentIndex = 0;
-  score = 0;
-  total = 0;
-  updateScoreDisplay();
-  loadQuestion();
-    }
-
-    function parseCSV(text) {
-      const pattern = /(?:,|\n|^)(?:"([^"]*(?:""[^"]*)*)"|([^",\n]*))/g;
-      const rows = [];
-      let matches = null;
-      let row = [];
-      let lastIndex = 0;
-
-      while ((matches = pattern.exec(text)) !== null) {
-        let matchedText = matches[1] ? matches[1].replace(/""/g, '"') : matches[2];
-        if (matchedText === undefined) matchedText = "";
-        row.push(matchedText);
-
-        if (text[pattern.lastIndex - 1] === "\n" || pattern.lastIndex === text.length) {
-          rows.push(row);
-          row = [];
-        }
-      }
-      return rows;
+      document.getElementById("score").innerText = `Score: ${score} / ${total}`;
     }
 
     function loadCSV() {
-      fetch(sheetURL)
-        .then(res => res.text())
-        .then(data => {
-          const rows = parseCSV(data);
-          allQuestions = rows.slice(1).map((c, i) => ({
-            index: i,
-            question: c[0],
-            correct: c[1],
-            codeRef: c[2],
-            wrong: [c[3], c[4], c[5]].filter(x => x),
+      fetch(CSV_URL)
+        .then(response => {
+          if (!response.ok) throw new Error("Network response was not ok");
+          return response.text();
+        })
+        .then(text => {
+          console.log("CSV Raw Text:", text);
+
+          const data = Papa.parse(text, { header: false }).data;
+          console.log("Parsed Data:", data);
+
+          allQuestions = data.slice(1).map(c => ({
+            question: c[0] || "",
+            correct: c[1] || "",
+            codeRef: c[2] || "",
+            incorrect: [c[3], c[4], c[5]].filter(x => x && x.trim() !== ""),
             approved: (c[6] || "").trim().toLowerCase() === "yes",
-            difficulty: (c[7] || "").trim(),
-            codebook: (c[8] || "").trim()
+            difficulty: (c[7] || "").trim().toLowerCase(),
+            codebook: (c[8] || "").trim().toLowerCase()
           }));
+
+          console.log("Final Questions:", allQuestions);
+
           applyFilters();
         })
-        .catch(e => {
-          document.getElementById("question").innerText = "Failed to load questions.";
-          console.error("Error loading CSV:", e);
+        .catch(error => {
+          console.error("Error loading CSV:", error);
+          document.getElementById("questionContainer").innerHTML = "<p style='color:red;'>Failed to load questions.</p>";
         });
     }
 
+    function applyFilters() {
+      const difficulty = document.getElementById("difficultyFilter").value.trim().toLowerCase();
+      const codebook = document.getElementById("codebookFilter").value.trim().toLowerCase();
+
+      filteredQuestions = allQuestions.filter(q => {
+        const matchDifficulty = !difficulty || q.difficulty === difficulty;
+        const matchCodebook = !codebook || q.codebook === codebook;
+        return q.approved && matchDifficulty && matchCodebook;
+      });
+
+      currentIndex = 0;
+      score = 0;
+      total = filteredQuestions.length;
+      updateScoreDisplay();
+      loadQuestion();
+    }
+
     function loadQuestion() {
-      if (!filteredQuestions.length) {
-        document.getElementById("question").innerText = "No questions match filters.";
-        document.getElementById("answers").innerHTML = "";
-        document.getElementById("codeMeta").innerText = "";
+      const container = document.getElementById("questionContainer");
+      if (filteredQuestions.length === 0) {
+        container.innerHTML = "<p>No questions match the filter.</p>";
         return;
       }
 
       const q = filteredQuestions[currentIndex];
-      const options = [q.correct, ...q.wrong].sort(() => 0.5 - Math.random());
+      let answers = [...q.incorrect, q.correct];
+      answers = answers.sort(() => Math.random() - 0.5);
 
-      document.getElementById("question").innerText = q.question;
-      document.getElementById("codeMeta").innerHTML = `
-        <strong>Code Book:</strong> ${q.codebook || "Unknown"}<br>
-        <strong>Reference:</strong> ${q.codeRef || "—"}
+      container.innerHTML = `
+        <div class="question-box">
+          <p>${q.question}</p>
+          <div class="code-ref">
+            <div><strong>Code Book:</strong> ${q.codebook.toUpperCase()}</div>
+            <div><strong>Reference:</strong> ${q.codeRef}</div>
+          </div>
+          <div id="answers"></div>
+        </div>
       `;
-      document.getElementById("result").innerText = "";
-      document.getElementById("answers").innerHTML = "";
 
-      options.forEach(ans => {
+      const answersDiv = container.querySelector("#answers");
+
+      answers.forEach(ans => {
         const btn = document.createElement("button");
-        btn.innerText = ans;
+        btn.className = "answer";
+        btn.textContent = ans;
         btn.onclick = () => {
-          total++;
           if (ans === q.correct) {
             score++;
-            document.getElementById("result").innerText = "✅ Correct!";
+            alert("Correct!");
           } else {
-            document.getElementById("result").innerText = "❌ Incorrect";
+            alert(`Wrong! Correct answer: ${q.correct}`);
+          }
+          currentIndex++;
+          if (currentIndex >= filteredQuestions.length) {
+            alert(`Quiz complete! Your score: ${score} / ${total}`);
+            currentIndex = 0;
+            score = 0;
           }
           updateScoreDisplay();
-          document.querySelectorAll("#answers button").forEach(b => b.disabled = true);
-          document.getElementById("nextBtn").style.display = "block";
+          loadQuestion();
         };
-        document.getElementById("answers").appendChild(btn);
+        answersDiv.appendChild(btn);
       });
     }
 
-    document.getElementById("nextBtn").addEventListener("click", () => {
-      currentIndex = (currentIndex + 1) % filteredQuestions.length;
-      loadQuestion();
-      document.getElementById("nextBtn").style.display = "none";
-    });
-
-    function requestAdmin() {
-      const pass = prompt("Enter admin password:");
-      if (pass === adminPassword) {
-        document.getElementById("adminPanel").style.display = "block";
-        loadAdminPanel();
-      } else {
-        alert("Incorrect password.");
-      }
-    }
-
-    function loadAdminPanel() {
-      const container = document.getElementById("adminList");
-      container.innerHTML = "";
-      allQuestions.forEach((q, i) => {
-        const div = document.createElement("div");
-        div.className = "admin-row";
-        div.innerHTML = `
-          <strong>Q:</strong> ${q.question} <br>
-          <strong>Approved:</strong> ${q.approved ? "Yes" : "No"}
-          <button onclick="updateApproval(${q.index}, 'Yes')">Approve</button>
-          <button onclick="updateApproval(${q.index}, 'No')">Reject</button>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    function updateApproval(rowIndex, newValue) {
-      fetch(scriptWebAppURL, {
-        method: "POST",
-        body: JSON.stringify({
-          type: "updateApproval",
-          rowIndex,
-          newValue
-        })
-      }).then(res => {
-        alert("Approval updated!");
-        loadCSV();
-      }).catch(e => {
-        alert("Failed to update approval.");
-        console.error(e);
-      });
-    }
-
-    document.getElementById("difficultyFilter").addEventListener("change", applyFilters);
-    document.getElementById("codebookFilter").addEventListener("change", applyFilters);
-
-    loadCSV();
+    window.onload = () => {
+      document.getElementById("difficultyFilter").addEventListener("change", applyFilters);
+      document.getElementById("codebookFilter").addEventListener("change", applyFilters);
+      loadCSV();
+    };
   </script>
 </body>
 </html>
