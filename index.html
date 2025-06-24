@@ -150,21 +150,26 @@
       document.getElementById("scoreBox").innerText = `Score: ${score} / ${total}`;
     }
 
-    function applyFilters() {
-      const difficulty = document.getElementById("difficultyFilter").value;
-      const codebook = document.getElementById("codebookFilter").value;
+function applyFilters() {
+  const difficulty = document.getElementById("difficultyFilter").value.trim().toLowerCase();
+  const codebook = document.getElementById("codebookFilter").value.trim().toLowerCase();
 
-      filteredQuestions = allQuestions.filter(q => {
-        const matchDifficulty = !difficulty || q.difficulty === difficulty;
-        const matchCodebook = !codebook || q.codebook === codebook;
-        return matchDifficulty && matchCodebook && q.approved;
-      });
+  filteredQuestions = allQuestions.filter(q => {
+    const qDifficulty = (q.difficulty || "").trim().toLowerCase();
+    const qCodebook = (q.codebook || "").trim().toLowerCase();
+    const qApproved = String(q.approved).toLowerCase() === "true";
 
-      currentIndex = 0;
-      score = 0;
-      total = 0;
-      updateScoreDisplay();
-      loadQuestion();
+    const matchDifficulty = !difficulty || qDifficulty === difficulty;
+    const matchCodebook = !codebook || qCodebook === codebook;
+
+    return matchDifficulty && matchCodebook && qApproved;
+  });
+
+  currentIndex = 0;
+  score = 0;
+  total = 0;
+  updateScoreDisplay();
+  loadQuestion();
     }
 
     function parseCSV(text) {
