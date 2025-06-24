@@ -5,45 +5,59 @@
   <title>Structural Trivia</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
+  html {
+    box-sizing: border-box;
+    font-size: 16px;
+  }
+
+  *, *:before, *:after {
+    box-sizing: inherit;
+  }
+
   body {
     font-family: 'Segoe UI', Roboto, sans-serif;
     background: radial-gradient(circle at top, #f0f4f8, #dbe9f4);
     color: #002b45;
     margin: 0;
-    padding: 2rem;
-    max-width: 800px;
-    margin: auto;
+    padding: 1.5rem;
+    max-width: 100%;
   }
 
   h1 {
     text-align: center;
-    font-size: 2.5rem;
+    font-size: 2rem;
     color: #003366;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.2rem;
   }
 
   .filters {
     display: flex;
-    justify-content: space-between;
-    gap: 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
     margin-bottom: 1.5rem;
   }
 
+  @media (min-width: 600px) {
+    .filters {
+      flex-direction: row;
+    }
+  }
+
   select {
-    flex: 1;
     padding: 0.6rem;
     font-size: 1rem;
     border-radius: 8px;
     border: 1px solid #bbb;
     background-color: #fefefe;
     color: #002b45;
+    width: 100%;
   }
 
   .question-box {
     background: white;
     border: 2px solid #007acc;
     border-radius: 16px;
-    padding: 2rem;
+    padding: 1.5rem;
     box-shadow: 0 8px 16px rgba(0,0,0,0.1);
     margin-bottom: 1.5rem;
     transition: transform 0.2s ease;
@@ -62,7 +76,7 @@
   button.answer {
     display: block;
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.85rem;
     margin: 0.5rem 0;
     background-color: #007acc;
     color: white;
@@ -81,12 +95,12 @@
     font-weight: bold;
     text-align: center;
     margin-bottom: 2rem;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     color: #003366;
   }
 
   #adminButton {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     text-align: center;
     color: #666;
     margin-top: 2rem;
@@ -109,9 +123,9 @@
   }
 
   .approve-btn, .reject-btn {
-    font-size: 0.9rem;
-    margin-left: 1rem;
-    padding: 0.3rem 0.6rem;
+    font-size: 0.85rem;
+    margin-left: 0.5rem;
+    padding: 0.4rem 0.7rem;
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -127,7 +141,8 @@
     color: white;
   }
 
-</style>
+  /* Form Enhan*
+
 
 </head>
 <body>
