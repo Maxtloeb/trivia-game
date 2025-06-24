@@ -5,102 +5,130 @@
   <title>Structural Trivia</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f0f4f8;
-      color: #003366;
-      max-width: 800px;
-      margin: auto;
-      padding: 2rem;
-    }
+  body {
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    background: radial-gradient(circle at top, #f0f4f8, #dbe9f4);
+    color: #002b45;
+    margin: 0;
+    padding: 2rem;
+    max-width: 800px;
+    margin: auto;
+  }
 
-    h1 {
-      text-align: center;
-      color: #003366;
-    }
+  h1 {
+    text-align: center;
+    font-size: 2.5rem;
+    color: #003366;
+    margin-bottom: 1.5rem;
+  }
 
-    .filters {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
+  .filters {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
 
-    select {
-      padding: 0.5rem;
-      font-size: 1rem;
-    }
+  select {
+    flex: 1;
+    padding: 0.6rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1px solid #bbb;
+    background-color: #fefefe;
+    color: #002b45;
+  }
 
-    .question-box {
-      background: white;
-      border: 2px solid #003366;
-      border-radius: 10px;
-      padding: 1.5rem;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      margin-bottom: 1rem;
-    }
+  .question-box {
+    background: white;
+    border: 2px solid #007acc;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
+    transition: transform 0.2s ease;
+  }
 
-    .code-ref {
-      margin-top: 1rem;
-      font-size: 0.9rem;
-      color: #555;
-    }
+  .question-box:hover {
+    transform: scale(1.01);
+  }
 
-    button {
-      display: block;
-      width: 100%;
-      padding: 0.75rem;
-      margin: 0.5rem 0;
-      background-color: #007acc;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      font-size: 1rem;
-      cursor: pointer;
-    }
+  .code-ref {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: #666;
+  }
 
-    button:hover {
-      background-color: #005fa3;
-    }
+  button.answer {
+    display: block;
+    width: 100%;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    background-color: #007acc;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
 
-    .score-box {
-      text-align: center;
-      font-weight: bold;
-      margin-bottom: 1rem;
-    }
+  button.answer:hover {
+    background-color: #005fa3;
+  }
 
-    #adminPanel {
-      display: none;
-      margin-top: 2rem;
-      padding: 1rem;
-      background-color: #e6f0ff;
-      border: 1px solid #007acc;
-      border-radius: 8px;
-    }
+  #score {
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 1.2rem;
+    color: #003366;
+  }
 
-    .admin-row {
-      border-bottom: 1px solid #ccc;
-      padding: 0.5rem 0;
-    }
+  #adminButton {
+    font-size: 0.8rem;
+    text-align: center;
+    color: #666;
+    margin-top: 2rem;
+    cursor: pointer;
+    background: none;
+    border: none;
+    text-decoration: underline;
+  }
 
-    .admin-row button {
-      width: auto;
-      margin-left: 10px;
-      padding: 0.25rem 0.5rem;
-    }
+  #adminButton:hover {
+    color: #003366;
+  }
 
-    .admin-button-link {
-      background: none;
-      color: #007acc;
-      font-size: 0.9rem;
-      border: none;
-      cursor: pointer;
-      text-decoration: underline;
-      margin: auto;
-      display: block;
-      margin-top: 2rem;
-    }
-  </style>
+  .admin-panel {
+    background: #fff9e6;
+    border: 1px solid #f9d06c;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 2rem;
+  }
+
+  .approve-btn, .reject-btn {
+    font-size: 0.9rem;
+    margin-left: 1rem;
+    padding: 0.3rem 0.6rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .approve-btn {
+    background-color: #28a745;
+    color: white;
+  }
+
+  .reject-btn {
+    background-color: #dc3545;
+    color: white;
+  }
+
+</style>
+
 </head>
 <body>
   <h1>Structural Trivia</h1>
