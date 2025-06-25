@@ -1,284 +1,241 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Structural Engineering Trivia</title>
-
-<style>
-  /* Same styling as before (podcast blue/yellow etc.) */
-  body {
-    font-family: 'Segoe UI', Roboto, sans-serif;
-    background: radial-gradient(circle at top, #f0f4f8, #dbe9f4);
-    color: #002b45;
-    margin: 0;
-    padding: 1.5rem;
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  h1 {
-    text-align: center;
-    font-size: 2rem;
-    color: #003366;
-    margin-bottom: 1.2rem;
-  }
-  select, button {
-    padding: 0.6rem;
-    font-size: 1rem;
-    border-radius: 8px;
-    border: 1px solid #bbb;
-    background-color: #fefefe;
-    color: #002b45;
-    margin: 0.5rem 0;
-  }
-  button {
-    cursor: pointer;
-    background-color: #007acc;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    transition: background 0.3s ease;
-  }
-  button:hover {
-    background-color: #005fa3;
-  }
-  .question-box {
-    background: white;
-    border: 2px solid #007acc;
-    border-radius: 16px;
-    padding: 1.5rem;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-    margin-bottom: 1.5rem;
-  }
-  .code-ref {
-    margin-top: 1rem;
-    font-size: 0.9rem;
-    color: #666;
-  }
-  #score, #summary {
-    font-weight: bold;
-    text-align: center;
-    margin-bottom: 1.5rem;
-    font-size: 1.1rem;
-    color: #003366;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Structural Engineering Trivia</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      background: radial-gradient(circle at top, #f0f4f8, #dbe9f4);
+      color: #002b45;
+      margin: 0;
+      padding: 2rem;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    h1 {
+      text-align: center;
+      color: #003366;
+      margin-bottom: 1rem;
+    }
+    select, button {
+      padding: 0.5rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      margin: 0.5rem 0;
+    }
+    button {
+      background-color: #007acc;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
+    .question-box {
+      background: white;
+      border: 2px solid #007acc;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    .code-ref {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: #666;
+    }
+    #score, #summary {
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 1.5rem;
+    }
+  </style>
 </head>
 <body>
-<h1>Structural Engineering Trivia</h1>
+  <h1>Structural Engineering Trivia</h1>
 
-<div id="setup">
-  <label for="difficultyFilter">Filter Difficulty:</label>
-  <select id="difficultyFilter" aria-label="Filter by Difficulty">
-    <option value="">All Difficulty</option>
-    <option value="easy">Easy</option>
-    <option value="medium">Medium</option>
-    <option value="challenging">Challenging</option>
-  </select>
+  <div id="setup">
+    <label for="difficultyFilter">Filter Difficulty:</label>
+    <select id="difficultyFilter">
+      <option value="">All Difficulty</option>
+      <option value="easy">Easy</option>
+      <option value="medium">Medium</option>
+      <option value="challenging">Challenging</option>
+    </select>
 
-  <label for="codebookFilter">Filter Code Book:</label>
-  <select id="codebookFilter" aria-label="Filter by Code Book">
-    <option value="">All Code Books</option>
-    <option value="aci 318">ACI 318</option>
-    <option value="asce 7">ASCE 7</option>
-    <option value="tms 402">TMS 402</option>
-    <option value="aisc">AISC</option>
-    <option value="nds">NDS</option>
-    <option value="other">Other</option>
-  </select>
+    <label for="codebookFilter">Filter Code Book:</label>
+    <select id="codebookFilter">
+      <option value="">All Code Books</option>
+      <option value="aci 318">ACI 318</option>
+      <option value="asce 7">ASCE 7</option>
+      <option value="tms 402">TMS 402</option>
+      <option value="aisc">AISC</option>
+      <option value="nds">NDS</option>
+      <option value="other">Other</option>
+    </select>
 
-  <label for="questionCount">Number of Questions:</label>
-  <select id="questionCount" aria-label="Select Number of Questions">
-    <option value="1">1</option>
-    <option value="10" selected>10</option>
-    <option value="20">20</option>
-  </select>
+    <label for="questionCount">Number of Questions:</label>
+    <select id="questionCount">
+      <option value="1">1</option>
+      <option value="10" selected>10</option>
+      <option value="20">20</option>
+    </select>
 
-  <button id="startBtn">Start Quiz</button>
-</div>
+    <button id="startBtn">Start Quiz</button>
+  </div>
 
-<div id="score" style="display:none;">Score: 0 / 0</div>
-<div id="questionContainer"></div>
-<div id="summary"></div>
+  <div id="score" style="display:none;">Score: 0 / 0</div>
+  <div id="questionContainer"></div>
+  <div id="summary"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<script>
-  const CSV_URL = 'https://script.google.com/macros/s/AKfycbwNMwOOKryAO4p-2Aq_EJ1epS7jRaDteL0klVbCaGzTw41WimcTAdK5sR0renASA0zi/exec';
-  const APPS_SCRIPT_POST_URL = 'https://script.google.com/macros/s/AKfycbwNMwOOKryAO4p-2Aq_EJ1epS7jRaDteL0klVbCaGzTw41WimcTAdK5sR0renASA0zi/exec';
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    const CSV_URL = 'https://script.google.com/macros/s/AKfycbxouNu-coZP0Ko-nsogIpYZNxBPL7AP5Gc9Igg7iSM4_M0vre5eCCklGP_VDO-W3ni-/exec';
+    const POST_URL = CSV_URL;
 
+    let allQuestions = [], quizQuestions = [], currentIndex = 0, score = 0, total = 0;
+    let playerAnswers = [];
 
-  let allQuestions = [];
-  let quizQuestions = [];
-  let currentIndex = 0;
-  let score = 0;
-  let total = 0;
-  let playerAnswers = []; // Store {row, correct} for POST
-
-  // Load all questions from CSV
-  function loadCSV() {
-    fetch(CSV_URL)
-      .then(res => {
-        if (!res.ok) throw new Error("Network error loading CSV");
-        return res.text();
-      })
-      .then(text => {
-        const data = Papa.parse(text, { header: false }).data;
-        allQuestions = data.slice(1).map((c, i) => ({
-          row: i + 2, // Sheet row index for this question (starts after header)
-          question: c[0] || "",
-          correct: c[1] || "",
-          codeRef: c[2] || "",
-          incorrect: [c[3], c[4], c[5]].filter(x => x && x.trim() !== ""),
-          approved: (c[6] || "").trim().toLowerCase() === "yes",
-          difficulty: (c[7] || "").trim().toLowerCase(),
-          codebook: (c[8] || "").trim().toLowerCase()
-        }));
-      })
-      .catch(e => {
-        alert("Error loading questions: " + e.message);
-      });
-  }
-
-  function startQuiz() {
-    // Filter questions
-    const difficultyFilter = document.getElementById("difficultyFilter").value.trim().toLowerCase();
-    const codebookFilter = document.getElementById("codebookFilter").value.trim().toLowerCase();
-    const count = parseInt(document.getElementById("questionCount").value);
-
-    const filtered = allQuestions.filter(q => 
-      q.approved &&
-      (!difficultyFilter || q.difficulty === difficultyFilter) &&
-      (!codebookFilter || q.codebook === codebookFilter)
-    );
-
-    if (filtered.length === 0) {
-      alert("No questions match your filter.");
-      return;
+    function loadCSV() {
+      fetch(CSV_URL)
+        .then(res => res.text())
+        .then(text => {
+          const data = Papa.parse(text).data;
+          allQuestions = data.slice(1).map((row, i) => ({
+            row: i + 2,
+            question: row[0] || "",
+            correct: row[1] || "",
+            codeRef: row[2] || "",
+            incorrect: [row[3], row[4], row[5]].filter(x => x),
+            approved: (row[6] || "").toLowerCase().trim() === "yes",
+            difficulty: (row[7] || "").toLowerCase().trim(),
+            codebook: (row[8] || "").toLowerCase().trim()
+          }));
+        })
+        .catch(e => alert("Failed to load questions: " + e.message));
     }
 
-    // Shuffle filtered
-    quizQuestions = filtered.sort(() => Math.random() - 0.5).slice(0, count);
+    function startQuiz() {
+      const difficulty = document.getElementById("difficultyFilter").value.trim().toLowerCase();
+      const codebook = document.getElementById("codebookFilter").value.trim().toLowerCase();
+      const count = parseInt(document.getElementById("questionCount").value);
 
-    if (quizQuestions.length < count) {
-      alert(`Only ${quizQuestions.length} questions available for your filters.`);
-    }
+      const filtered = allQuestions.filter(q =>
+        q.approved &&
+        (!difficulty || q.difficulty === difficulty) &&
+        (!codebook || q.codebook === codebook)
+      );
 
-    currentIndex = 0;
-    score = 0;
-    playerAnswers = [];
-    total = quizQuestions.length;
-
-    document.getElementById("setup").style.display = "none";
-    document.getElementById("score").style.display = "block";
-    document.getElementById("summary").innerHTML = "";
-    updateScoreDisplay();
-    loadQuestion();
-  }
-
-  function updateScoreDisplay() {
-    document.getElementById("score").innerText = `Score: ${score} / ${total}`;
-  }
-
-  function loadQuestion() {
-    const container = document.getElementById("questionContainer");
-
-    if (currentIndex >= quizQuestions.length) {
-      finishQuiz();
-      return;
-    }
-
-    const q = quizQuestions[currentIndex];
-    let answers = [...q.incorrect, q.correct].sort(() => Math.random() - 0.5);
-
-    container.innerHTML = `
-      <div class="question-box">
-        <p>${q.question}</p>
-        <div class="code-ref">
-          <div><strong>Code Book:</strong> ${q.codebook.toUpperCase()}</div>
-          <div><strong>Reference:</strong> ${q.codeRef}</div>
-        </div>
-        <div id="answers"></div>
-      </div>
-    `;
-
-    const answersDiv = container.querySelector("#answers");
-    answersDiv.innerHTML = "";
-
-    answers.forEach(ans => {
-      const btn = document.createElement("button");
-      btn.className = "answer";
-      btn.textContent = ans;
-      btn.onclick = () => answerQuestion(q.row, ans === q.correct);
-      answersDiv.appendChild(btn);
-    });
-  }
-
-  function answerQuestion(row, correct) {
-    if (correct) score++;
-    playerAnswers.push({row, correct});
-    currentIndex++;
-    updateScoreDisplay();
-    loadQuestion();
-  }
-
-  function finishQuiz() {
-    document.getElementById("questionContainer").innerHTML = "";
-    document.getElementById("score").style.display = "none";
-
-    // Send answers batch to Apps Script backend
-    fetch(APPS_SCRIPT_POST_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ answers: playerAnswers })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.status !== "success") {
-        alert("Error saving results: " + (data.message || "unknown"));
-        showSummary(null);
+      if (filtered.length === 0) {
+        alert("No matching questions found.");
         return;
       }
-      showSummary(data.averages);
-    })
-    .catch(e => {
-      alert("Failed to save results: " + e.message);
-      showSummary(null);
-    });
-  }
 
-  function showSummary(averages) {
-    let html = `<h2>Quiz Complete!</h2>`;
-    html += `<p>Your Score: ${score} / ${total}</p>`;
+      quizQuestions = filtered.sort(() => 0.5 - Math.random()).slice(0, count);
+      if (quizQuestions.length < count) {
+        alert(`Only ${quizQuestions.length} available for your filters.`);
+      }
 
-    if (!averages) {
-      html += `<p>Sorry, could not load average scores.</p>`;
-    } else {
-      html += `<h3>Average Accuracy for Each Question</h3><ul>`;
-      playerAnswers.forEach(({row}) => {
-        const avg = averages[row];
-        const questionText = quizQuestions.find(q => q.row === row)?.question || "(unknown)";
-        html += `<li><strong>${questionText}</strong><br>Average correct rate: ${avg !== null ? (avg*100).toFixed(1) + "%" : "No data"}</li>`;
-      });
-      html += "</ul>";
+      currentIndex = 0;
+      score = 0;
+      total = quizQuestions.length;
+      playerAnswers = [];
+
+      document.getElementById("setup").style.display = "none";
+      document.getElementById("score").style.display = "block";
+      document.getElementById("summary").innerHTML = "";
+      updateScore();
+      loadQuestion();
     }
 
-    html += `<button id="restartBtn">Restart Quiz</button>`;
+    function updateScore() {
+      document.getElementById("score").innerText = `Score: ${score} / ${total}`;
+    }
 
-    const summaryDiv = document.getElementById("summary");
-    summaryDiv.innerHTML = html;
+    function loadQuestion() {
+      const container = document.getElementById("questionContainer");
+      if (currentIndex >= quizQuestions.length) return finishQuiz();
 
-    document.getElementById("restartBtn").onclick = () => {
-      document.getElementById("summary").innerHTML = "";
-      document.getElementById("setup").style.display = "block";
+      const q = quizQuestions[currentIndex];
+      const answers = [...q.incorrect, q.correct].sort(() => 0.5 - Math.random());
+
+      container.innerHTML = `
+        <div class="question-box">
+          <p>${q.question}</p>
+          <div class="code-ref">
+            <div><strong>Code Book:</strong> ${q.codebook.toUpperCase()}</div>
+            <div><strong>Reference:</strong> ${q.codeRef}</div>
+          </div>
+          <div id="answers"></div>
+        </div>
+      `;
+
+      const answersDiv = container.querySelector("#answers");
+      answers.forEach(ans => {
+        const btn = document.createElement("button");
+        btn.textContent = ans;
+        btn.onclick = () => handleAnswer(q.row, ans === q.correct);
+        answersDiv.appendChild(btn);
+      });
+    }
+
+    function handleAnswer(row, correct) {
+      if (correct) score++;
+      playerAnswers.push({ row, correct });
+      currentIndex++;
+      updateScore();
+      loadQuestion();
+    }
+
+    function finishQuiz() {
+      document.getElementById("questionContainer").innerHTML = "";
+      document.getElementById("score").style.display = "none";
+
+      fetch(POST_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers: playerAnswers })
+      })
+      .then(res => res.json())
+      .then(data => showSummary(data.averages))
+      .catch(e => {
+        alert("Error saving results: " + e.message);
+        showSummary(null);
+      });
+    }
+
+    function showSummary(averages) {
+      let html = `<h2>Quiz Complete!</h2><p>Your Score: ${score} / ${total}</p>`;
+
+      if (!averages) {
+        html += `<p>Could not load average stats.</p>`;
+      } else {
+        html += `<h3>Average Accuracy</h3><ul>`;
+        playerAnswers.forEach(({ row }) => {
+          const avg = averages[row];
+          const q = quizQuestions.find(q => q.row === row)?.question || "(unknown)";
+          html += `<li><strong>${q}</strong><br>Avg Correct: ${avg != null ? (avg * 100).toFixed(1) + "%" : "No data"}</li>`;
+        });
+        html += "</ul>";
+      }
+
+      html += `<button id="restartBtn">Restart</button>`;
+      const summaryDiv = document.getElementById("summary");
+      summaryDiv.innerHTML = html;
+      document.getElementById("restartBtn").onclick = () => {
+        document.getElementById("summary").innerHTML = "";
+        document.getElementById("setup").style.display = "block";
+      };
+    }
+
+    window.onload = () => {
+      loadCSV();
+      document.getElementById("startBtn").onclick = startQuiz;
     };
-  }
-
-  window.onload = () => {
-    loadCSV();
-
-    document.getElementById("startBtn").onclick = startQuiz;
-  };
-</script>
+  </script>
 </body>
 </html>
