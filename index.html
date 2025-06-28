@@ -18,6 +18,64 @@
     color: #003366;
     margin-bottom: 2rem;
   }
+  .filter-section {
+    background: white;
+    border: 2px solid #007acc;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  }
+  .filter-section h3 {
+    margin-top: 0;
+    color: #003366;
+  }
+  .filter-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .filter-btn {
+    padding: 0.5rem 1rem;
+    border: 2px solid #007acc;
+    background: white;
+    color: #007acc;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+  }
+  .filter-btn:hover {
+    background: #007acc;
+    color: white;
+  }
+  .filter-btn.active {
+    background: #007acc;
+    color: white;
+  }
+  .start-quiz-btn {
+    display: block;
+    width: 100%;
+    padding: 1rem;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition: all 0.2s ease;
+  }
+  .start-quiz-btn:hover {
+    background: #218838;
+    transform: translateY(-1px);
+  }
+  .start-quiz-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+  }
   .question-box {
     background: white;
     border: 2px solid #007acc;
@@ -81,11 +139,51 @@
     font-size: 0.9rem;
     color: #666;
   }
+  .quiz-info {
+    background: #e8f4f8;
+    border: 1px solid #007acc;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+  .hidden {
+    display: none;
+  }
+  .back-btn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 1rem;
+  }
+  .back-btn:hover {
+    background: #5a6268;
+  }
 </style>
 </head>
 <body>
 <h1>🏗️ Structural Engineering Trivia</h1>
-<div id="questionContainer">
+
+<div id="filterSection" class="filter-section">
+  <h3>Choose Your Quiz Categories</h3>
+  <div class="quiz-info">
+    <strong>Total Questions Available:</strong> <span id="totalQuestions">Loading...</span>
+  </div>
+  <div class="filter-options" id="filterOptions">
+    <!-- Filter buttons will be added here -->
+  </div>
+  <div class="quiz-info">
+    <strong>Selected Questions:</strong> <span id="selectedCount">0</span>
+  </div>
+  <button class="start-quiz-btn" id="startQuizBtn" onclick="startQuiz()" disabled>
+    Start Quiz
+  </button>
+</div>
+
+<div id="questionContainer" class="hidden">
   <div class="loading">Loading questions...</div>
 </div>
 <div id="summary"></div>
@@ -94,9 +192,12 @@
   // Your Google Apps Script URL
   const QUESTIONS_URL = 'https://script.google.com/macros/s/AKfycbxtf7eg9wXScP4J3xEUCrDx8_zAiv5-h0KBxlagMctbLaZYhXkKjz2-7_XScm_FH3fr/exec';
   
-  let questions = [];
+  let allQuestions = [];
+  let filteredQuestions = [];
   let currentQuestionIndex = 0;
   let correctCount = 0;
+  let selectedCategories = new Set();
+  let availableCategories = [];
 
   async function loadQuestions() {
     try {
@@ -113,25 +214,28 @@
       }
       
       // Filter approved questions only
-      questions = data.filter(q => {
+      allQuestions = data.filter(q => {
         const approved = q.approved ? q.approved.toString().toLowerCase().trim() : 'no';
         return approved === 'yes' || approved === 'true';
       });
       
-      if (questions.length === 0) {
-        document.getElementById('questionContainer').innerHTML = 
+      if (allQuestions.length === 0) {
+        document.getElementById('filterSection').innerHTML = 
           '<div class="error">No approved questions found. Please check your spreadsheet.</div>';
         return;
       }
       
-      // Shuffle questions for variety
-      questions = questions.sort(() => Math.random() - 0.5);
+      // Get unique categories
+      availableCategories = [...new Set(allQuestions.map(q => {
+        const codebook = q.codebook || q.Codebook || 'Other';
+        return codebook.toString().trim();
+      }))].sort();
       
-      showQuestion();
+      setupFilterSection();
       
     } catch (error) {
       console.error('Error loading questions:', error);
-      document.getElementById('questionContainer').innerHTML = 
+      document.getElementById('filterSection').innerHTML = 
         `<div class="error">
           <strong>Error loading questions:</strong><br>
           ${error.message}<br><br>
@@ -145,13 +249,109 @@
     }
   }
 
+  function setupFilterSection() {
+    const filterOptions = document.getElementById('filterOptions');
+    const totalQuestions = document.getElementById('totalQuestions');
+    
+    totalQuestions.textContent = allQuestions.length;
+    
+    // Add "All Categories" button
+    const allBtn = document.createElement('button');
+    allBtn.className = 'filter-btn';
+    allBtn.textContent = 'All Categories';
+    allBtn.onclick = () => toggleCategory('all');
+    filterOptions.appendChild(allBtn);
+    
+    // Add category buttons
+    availableCategories.forEach(category => {
+      const btn = document.createElement('button');
+      btn.className = 'filter-btn';
+      btn.textContent = category;
+      btn.onclick = () => toggleCategory(category);
+      filterOptions.appendChild(btn);
+    });
+    
+    // Select all by default
+    toggleCategory('all');
+  }
+
+  function toggleCategory(category) {
+    const buttons = document.querySelectorAll('.filter-btn');
+    
+    if (category === 'all') {
+      // Select all categories
+      selectedCategories.clear();
+      availableCategories.forEach(cat => selectedCategories.add(cat));
+      
+      buttons.forEach(btn => {
+        btn.classList.add('active');
+      });
+    } else {
+      // Toggle individual category
+      if (selectedCategories.has(category)) {
+        selectedCategories.delete(category);
+      } else {
+        selectedCategories.add(category);
+      }
+      
+      // Update button states
+      buttons.forEach(btn => {
+        if (btn.textContent === 'All Categories') {
+          btn.classList.toggle('active', selectedCategories.size === availableCategories.length);
+        } else if (btn.textContent === category) {
+          btn.classList.toggle('active', selectedCategories.has(category));
+        }
+      });
+      
+      // If all individual categories are selected, activate "All Categories"
+      const allBtn = Array.from(buttons).find(btn => btn.textContent === 'All Categories');
+      if (selectedCategories.size === availableCategories.length) {
+        allBtn.classList.add('active');
+      } else {
+        allBtn.classList.remove('active');
+      }
+    }
+    
+    updateSelectedCount();
+  }
+
+  function updateSelectedCount() {
+    filteredQuestions = allQuestions.filter(q => {
+      const codebook = q.codebook || q.Codebook || 'Other';
+      return selectedCategories.has(codebook.toString().trim());
+    });
+    
+    document.getElementById('selectedCount').textContent = filteredQuestions.length;
+    document.getElementById('startQuizBtn').disabled = filteredQuestions.length === 0;
+  }
+
+  function startQuiz() {
+    if (filteredQuestions.length === 0) {
+      alert('Please select at least one category!');
+      return;
+    }
+    
+    // Shuffle questions for variety
+    filteredQuestions = filteredQuestions.sort(() => Math.random() - 0.5);
+    
+    // Hide filter section and show quiz
+    document.getElementById('filterSection').classList.add('hidden');
+    document.getElementById('questionContainer').classList.remove('hidden');
+    
+    // Reset quiz state
+    currentQuestionIndex = 0;
+    correctCount = 0;
+    
+    showQuestion();
+  }
+
   function showQuestion() {
-    if (currentQuestionIndex >= questions.length) {
+    if (currentQuestionIndex >= filteredQuestions.length) {
       showSummary();
       return;
     }
 
-    const q = questions[currentQuestionIndex];
+    const q = filteredQuestions[currentQuestionIndex];
     
     // Validate question has required fields
     if (!q.question || !q.correct) {
@@ -191,7 +391,8 @@
     const container = document.getElementById('questionContainer');
     
     container.innerHTML = `
-      <div class="progress">Question ${currentQuestionIndex + 1} of ${questions.length}</div>
+      <button class="back-btn" onclick="backToCategories()">← Back to Categories</button>
+      <div class="progress">Question ${currentQuestionIndex + 1} of ${filteredQuestions.length}</div>
       <div class="question-box">
         <p><strong>Q${currentQuestionIndex + 1}:</strong> ${q.question}</p>
         <div id="answers"></div>
@@ -220,8 +421,14 @@
     showQuestion();
   }
 
+  function backToCategories() {
+    document.getElementById('filterSection').classList.remove('hidden');
+    document.getElementById('questionContainer').classList.add('hidden');
+    document.getElementById('summary').innerHTML = '';
+  }
+
   function showSummary() {
-    const percentage = Math.round((correctCount / questions.length) * 100);
+    const percentage = Math.round((correctCount / filteredQuestions.length) * 100);
     let message = '';
     
     if (percentage >= 90) {
@@ -236,14 +443,21 @@
       message = '📖 Keep learning! Practice makes perfect.';
     }
     
+    // Get selected categories for display
+    const categoryList = Array.from(selectedCategories).join(', ');
+    
     document.getElementById('questionContainer').innerHTML = '';
     document.getElementById('summary').innerHTML = `
       <h2>Quiz Complete!</h2>
-      <p>Your score: <strong>${correctCount} out of ${questions.length}</strong></p>
+      <p><strong>Categories:</strong> ${categoryList}</p>
+      <p>Your score: <strong>${correctCount} out of ${filteredQuestions.length}</strong></p>
       <p>Percentage: <strong>${percentage}%</strong></p>
       <p>${message}</p>
-      <button onclick="location.reload()" style="margin-top: 1rem; background: #007acc; color: white;">
-        Take Quiz Again
+      <button onclick="backToCategories()" style="margin-top: 1rem; background: #007acc; color: white; margin-right: 1rem;">
+        Choose Different Categories
+      </button>
+      <button onclick="startQuiz()" style="margin-top: 1rem; background: #28a745; color: white;">
+        Retake Same Quiz
       </button>
     `;
   }
