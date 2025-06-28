@@ -16,6 +16,7 @@
   h1 {
     text-align: center;
     color: #003366;
+    margin-bottom: 2rem;
   }
   .question-box {
     background: white;
@@ -36,34 +37,63 @@
     color: #002b45;
     cursor: pointer;
     width: 100%;
+    transition: all 0.2s ease;
   }
   button:hover {
     background-color: #005fa3;
     color: white;
+    transform: translateY(-1px);
   }
   .code-ref {
     font-size: 0.9rem;
     color: #666;
     margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
   }
   #summary {
     text-align: center;
     font-weight: bold;
     font-size: 1.2rem;
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    border: 2px solid #007acc;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  }
+  .loading {
+    text-align: center;
+    padding: 2rem;
+    font-size: 1.1rem;
+    color: #666;
+  }
+  .error {
+    background: #ffe6e6;
+    border: 2px solid #ff9999;
+    color: #cc0000;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+  }
+  .progress {
+    text-align: center;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: #666;
   }
 </style>
 </head>
 <body>
-
-<h1>Structural Engineering Trivia</h1>
-<div id="questionContainer"></div>
+<h1>🏗️ Structural Engineering Trivia</h1>
+<div id="questionContainer">
+  <div class="loading">Loading questions...</div>
+</div>
 <div id="summary"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script>
-  // Replace this with your deployed Apps Script URL
+  // Your Google Apps Script URL
   const QUESTIONS_URL = 'https://script.google.com/macros/s/AKfycbxtf7eg9wXScP4J3xEUCrDx8_zAiv5-h0KBxlagMctbLaZYhXkKjz2-7_XScm_FH3fr/exec';
-
+  
   let questions = [];
   let currentQuestionIndex = 0;
   let correctCount = 0;
@@ -71,17 +101,47 @@
   async function loadQuestions() {
     try {
       const res = await fetch(QUESTIONS_URL);
-      if (!res.ok) throw new Error('Failed to load questions');
-      questions = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(`Failed to load questions (${res.status})`);
+      }
+      
+      const data = await res.json();
+      
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error('No questions received from server');
+      }
+      
       // Filter approved questions only
-      questions = questions.filter(q => q.approved.toString().toLowerCase() === 'yes');
+      questions = data.filter(q => {
+        const approved = q.approved ? q.approved.toString().toLowerCase().trim() : 'no';
+        return approved === 'yes' || approved === 'true';
+      });
+      
       if (questions.length === 0) {
-        document.getElementById('questionContainer').innerHTML = '<p>No questions available.</p>';
+        document.getElementById('questionContainer').innerHTML = 
+          '<div class="error">No approved questions found. Please check your spreadsheet.</div>';
         return;
       }
+      
+      // Shuffle questions for variety
+      questions = questions.sort(() => Math.random() - 0.5);
+      
       showQuestion();
-    } catch (e) {
-      document.getElementById('questionContainer').innerHTML = `<p>Error loading questions: ${e.message}</p>`;
+      
+    } catch (error) {
+      console.error('Error loading questions:', error);
+      document.getElementById('questionContainer').innerHTML = 
+        `<div class="error">
+          <strong>Error loading questions:</strong><br>
+          ${error.message}<br><br>
+          Please check:
+          <ul>
+            <li>Your Google Apps Script is deployed correctly</li>
+            <li>The spreadsheet has the correct column headers</li>
+            <li>At least one question has "approved" set to "yes"</li>
+          </ul>
+        </div>`;
     }
   }
 
@@ -90,46 +150,106 @@
       showSummary();
       return;
     }
-    const q = questions[currentQuestionIndex];
-    const answers = [...q.incorrect, q.correct].sort(() => Math.random() - 0.5);
 
+    const q = questions[currentQuestionIndex];
+    
+    // Validate question has required fields
+    if (!q.question || !q.correct) {
+      console.warn('Skipping invalid question:', q);
+      currentQuestionIndex++;
+      showQuestion();
+      return;
+    }
+    
+    // Handle incorrect answers - they might be in one field or separate fields
+    let incorrectAnswers = [];
+    if (q.incorrect) {
+      // Split by comma if it's a string with multiple answers
+      incorrectAnswers = q.incorrect.toString().split(',').map(a => a.trim()).filter(a => a);
+    }
+    
+    // Also check for separate incorrect answer columns
+    for (let i = 1; i <= 3; i++) {
+      const field = q[`incorrect${i}`] || q[`Incorrect${i}`];
+      if (field && field.toString().trim()) {
+        incorrectAnswers.push(field.toString().trim());
+      }
+    }
+    
+    // Make sure we have at least one incorrect answer
+    if (incorrectAnswers.length === 0) {
+      console.warn('No incorrect answers found for question:', q.question);
+      currentQuestionIndex++;
+      showQuestion();
+      return;
+    }
+    
+    // Combine and shuffle all answers
+    const allAnswers = [...incorrectAnswers, q.correct.toString()];
+    const shuffledAnswers = allAnswers.sort(() => Math.random() - 0.5);
+    
     const container = document.getElementById('questionContainer');
+    
     container.innerHTML = `
+      <div class="progress">Question ${currentQuestionIndex + 1} of ${questions.length}</div>
       <div class="question-box">
         <p><strong>Q${currentQuestionIndex + 1}:</strong> ${q.question}</p>
         <div id="answers"></div>
         <div class="code-ref">
-          <div><strong>Code Book:</strong> ${q.codebook.toUpperCase()}</div>
-          <div><strong>Reference:</strong> ${q.codeRef}</div>
+          <div><strong>Code Book:</strong> ${q.codebook || q.Codebook || 'N/A'}</div>
+          <div><strong>Reference:</strong> ${q.codeRef || q.CodeRef || q.code_ref || 'N/A'}</div>
         </div>
       </div>
     `;
 
     const answersDiv = document.getElementById('answers');
-    answersDiv.innerHTML = '';
-
-    answers.forEach(answer => {
+    
+    shuffledAnswers.forEach(answer => {
       const btn = document.createElement('button');
       btn.textContent = answer;
-      btn.onclick = () => handleAnswer(answer === q.correct);
+      btn.onclick = () => handleAnswer(answer === q.correct.toString());
       answersDiv.appendChild(btn);
     });
   }
 
   function handleAnswer(isCorrect) {
-    if (isCorrect) correctCount++;
+    if (isCorrect) {
+      correctCount++;
+    }
     currentQuestionIndex++;
     showQuestion();
   }
 
   function showSummary() {
+    const percentage = Math.round((correctCount / questions.length) * 100);
+    let message = '';
+    
+    if (percentage >= 90) {
+      message = '🌟 Excellent! You\'re a structural engineering expert!';
+    } else if (percentage >= 80) {
+      message = '👍 Great job! You have strong knowledge.';
+    } else if (percentage >= 70) {
+      message = '👌 Good work! Keep studying.';
+    } else if (percentage >= 60) {
+      message = '📚 Not bad, but there\'s room for improvement.';
+    } else {
+      message = '📖 Keep learning! Practice makes perfect.';
+    }
+    
     document.getElementById('questionContainer').innerHTML = '';
-    document.getElementById('summary').innerHTML = `Quiz Complete! Your score: ${correctCount} out of ${questions.length}`;
+    document.getElementById('summary').innerHTML = `
+      <h2>Quiz Complete!</h2>
+      <p>Your score: <strong>${correctCount} out of ${questions.length}</strong></p>
+      <p>Percentage: <strong>${percentage}%</strong></p>
+      <p>${message}</p>
+      <button onclick="location.reload()" style="margin-top: 1rem; background: #007acc; color: white;">
+        Take Quiz Again
+      </button>
+    `;
   }
 
-  // Start loading questions on page load
+  // Start loading questions when page loads
   window.onload = loadQuestions;
 </script>
-
 </body>
 </html>
