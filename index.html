@@ -19,7 +19,7 @@
       if (!Array.isArray(data) || data.length === 0) throw new Error('No questions received from server');
       allQuestions = data.filter(q => {
         const approved = q.approved ? q.approved.toString().toLowerCase().trim() : 'no';
-        return approved === 'yes' || approved === 'true';
+        return (approved === 'yes' || approved === 'true');
       });
       if (allQuestions.length === 0) {
         document.getElementById('filterSection').innerHTML = 
@@ -88,7 +88,6 @@
     updateSelectedCount();
   }
 
-  // Selection logic
   function toggleCategory(category) {
     const buttons = document.querySelectorAll('.filter-btn');
     if (category === 'all') {
@@ -125,12 +124,10 @@
     updateSelectedCount();
   }
 
-  // Question count selection logic
   function setQuestionCount(val) {
     selectedQuestionCount = parseInt(val, 10) || 10;
   }
 
-  // Filter question set on selection
   function updateSelectedCount() {
     filteredQuestions = allQuestions.filter(q => {
       const codebook = q.codebook || q.Codebook || 'Other';
@@ -140,7 +137,6 @@
     document.getElementById('startQuizBtn').disabled = filteredQuestions.length === 0;
   }
 
-  // Quiz logic
   function startQuiz() {
     if (filteredQuestions.length === 0) {
       alert('Please select at least one category!');
@@ -162,7 +158,7 @@
       return;
     }
     const q = quizQuestions[currentQuestionIndex];
-    if (!q.question || !q.correct) {
+    if (!q.question || !q.correct || !(q.approved && (q.approved.toString().toLowerCase() === 'yes' || q.approved.toString().toLowerCase() === 'true'))) {
       currentQuestionIndex++;
       showQuestion();
       return;
@@ -182,32 +178,67 @@
     }
     const allAnswers = [...incorrectAnswers, q.correct.toString()];
     const shuffledAnswers = allAnswers.sort(() => Math.random() - 0.5);
+
+    // Progress Bar calculation
+    const progressPercent = Math.round((currentQuestionIndex) / quizQuestions.length * 100);
+
     const container = document.getElementById('questionContainer');
+    const difficulty = q.difficulty || q.Difficulty || q['Estimated Difficulty'] || 'Unknown';
+    const codebook = q.codebook || q.Codebook || 'N/A';
+    const codeRef = q.codeRef || q.CodeRef || q.code_ref || 'N/A';
     container.innerHTML = `
       <button class="back-btn" onclick="backToCategories()">← Back to Categories</button>
+      <div class="progress-bar-container">
+        <div class="progress-bar" style="width:${progressPercent}%"></div>
+      </div>
       <div class="progress">Question ${currentQuestionIndex + 1} of ${quizQuestions.length}</div>
       <div class="question-box">
         <p><strong>Q${currentQuestionIndex + 1}:</strong> ${q.question}</p>
-        <div id="answers"></div>
-        <div class="code-ref">
-          <div><strong>Code Book:</strong> ${q.codebook || q.Codebook || 'N/A'}</div>
-          <div><strong>Reference:</strong> ${q.codeRef || q.CodeRef || q.code_ref || 'N/A'}</div>
+        <div style="margin-bottom:8px;">
+          <span style="background:#e0edfa; border-radius:8px; padding:4px 12px; margin-right:10px;"><strong>Difficulty:</strong> ${difficulty}</span>
+          <span style="background:#f0e3fa; border-radius:8px; padding:4px 12px; margin-right:10px;"><strong>Code Book:</strong> ${codebook}</span>
+          <span style="background:#fef6dd; border-radius:8px; padding:4px 12px;"><strong>Reference:</strong> ${codeRef}</span>
         </div>
+        <div id="answers"></div>
+        <div id="feedback" style="margin-top: 1rem; font-weight: bold; font-size: 1.05rem;"></div>
       </div>
     `;
     const answersDiv = document.getElementById('answers');
     shuffledAnswers.forEach(answer => {
       const btn = document.createElement('button');
       btn.textContent = answer;
-      btn.onclick = () => handleAnswer(answer === q.correct.toString());
+      btn.onclick = () => handleAnswer(answer === q.correct.toString(), btn, q.correct.toString(), shuffledAnswers);
       answersDiv.appendChild(btn);
     });
   }
 
-  function handleAnswer(isCorrect) {
-    if (isCorrect) correctCount++;
-    currentQuestionIndex++;
-    showQuestion();
+  function handleAnswer(isCorrect, btn, correctAnswer, allAnswers) {
+    const feedbackDiv = document.getElementById('feedback');
+    // Disable all buttons
+    Array.from(document.getElementById('answers').children).forEach(b => b.disabled = true);
+    // Highlight answers
+    Array.from(document.getElementById('answers').children).forEach(b => {
+      if (b.textContent === correctAnswer) {
+        b.style.backgroundColor = "#c9f7c9";
+        b.style.border = "2px solid #28a745";
+      } else if (b !== btn && !isCorrect) {
+        b.style.opacity = "0.7";
+      }
+    });
+
+    if (isCorrect) {
+      correctCount++;
+      feedbackDiv.innerHTML = '<span style="color:#28a745;">Correct! ✅</span>';
+    } else {
+      feedbackDiv.innerHTML = `<span style="color:#d9534f;">Incorrect! ❌<br>The correct answer was: <b>${correctAnswer}</b></span>`;
+      btn.style.backgroundColor = "#ffd6d6";
+      btn.style.border = "2px solid #d9534f";
+    }
+    // Move to next question after short pause
+    setTimeout(() => {
+      currentQuestionIndex++;
+      showQuestion();
+    }, 1350);
   }
 
   function backToCategories() {
