@@ -1,240 +1,36 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Structural Engineering Trivia</title>
-<style>
-  body {
-    font-family: 'Segoe UI', Roboto, sans-serif;
-    background: radial-gradient(circle at top, #f0f4f8, #dbe9f4);
-    color: #002b45;
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 1.5rem;
-  }
-  h1 {
-    text-align: center;
-    color: #003366;
-    margin-bottom: 2rem;
-  }
-  .filter-section {
-    background: white;
-    border: 2px solid #007acc;
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-  }
-  .filter-section h3 {
-    margin-top: 0;
-    color: #003366;
-  }
-  .filter-options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-  .filter-btn {
-    padding: 0.5rem 1rem;
-    border: 2px solid #007acc;
-    background: white;
-    color: #007acc;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-  }
-  .filter-btn:hover {
-    background: #007acc;
-    color: white;
-  }
-  .filter-btn.active {
-    background: #007acc;
-    color: white;
-  }
-  .start-quiz-btn {
-    display: block;
-    width: 100%;
-    padding: 1rem;
-    background: #28a745;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 1.1rem;
-    cursor: pointer;
-    margin-top: 1rem;
-    transition: all 0.2s ease;
-  }
-  .start-quiz-btn:hover {
-    background: #218838;
-    transform: translateY(-1px);
-  }
-  .start-quiz-btn:disabled {
-    background: #6c757d;
-    cursor: not-allowed;
-    transform: none;
-  }
-  .question-box {
-    background: white;
-    border: 2px solid #007acc;
-    border-radius: 16px;
-    padding: 1.5rem;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-    margin-bottom: 1.5rem;
-  }
-  button {
-    display: block;
-    margin: 0.5rem 0;
-    padding: 0.6rem;
-    font-size: 1rem;
-    border-radius: 8px;
-    border: 1px solid #bbb;
-    background-color: #fefefe;
-    color: #002b45;
-    cursor: pointer;
-    width: 100%;
-    transition: all 0.2s ease;
-  }
-  button:hover {
-    background-color: #005fa3;
-    color: white;
-    transform: translateY(-1px);
-  }
-  .code-ref {
-    font-size: 0.9rem;
-    color: #666;
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid #eee;
-  }
-  #summary {
-    text-align: center;
-    font-weight: bold;
-    font-size: 1.2rem;
-    background: white;
-    padding: 2rem;
-    border-radius: 16px;
-    border: 2px solid #007acc;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-  }
-  .loading {
-    text-align: center;
-    padding: 2rem;
-    font-size: 1.1rem;
-    color: #666;
-  }
-  .error {
-    background: #ffe6e6;
-    border: 2px solid #ff9999;
-    color: #cc0000;
-    padding: 1rem;
-    border-radius: 8px;
-    margin: 1rem 0;
-  }
-  .progress {
-    text-align: center;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-    color: #666;
-  }
-  .quiz-info {
-    background: #e8f4f8;
-    border: 1px solid #007acc;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-  }
-  .hidden {
-    display: none;
-  }
-  .back-btn {
-    background: #6c757d;
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    cursor: pointer;
-    margin-bottom: 1rem;
-  }
-  .back-btn:hover {
-    background: #5a6268;
-  }
-</style>
-</head>
-<body>
-<h1>🏗️ Structural Engineering Trivia</h1>
-
-<div id="filterSection" class="filter-section">
-  <h3>Choose Your Quiz Categories</h3>
-  <div class="quiz-info">
-    <strong>Total Questions Available:</strong> <span id="totalQuestions">Loading...</span>
-  </div>
-  <div class="filter-options" id="filterOptions">
-    <!-- Filter buttons will be added here -->
-  </div>
-  <div class="quiz-info">
-    <strong>Selected Questions:</strong> <span id="selectedCount">0</span>
-  </div>
-  <button class="start-quiz-btn" id="startQuizBtn" onclick="startQuiz()" disabled>
-    Start Quiz
-  </button>
-</div>
-
-<div id="questionContainer" class="hidden">
-  <div class="loading">Loading questions...</div>
-</div>
-<div id="summary"></div>
-
 <script>
   // Your Google Apps Script URL
   const QUESTIONS_URL = 'https://script.google.com/macros/s/AKfycbxtf7eg9wXScP4J3xEUCrDx8_zAiv5-h0KBxlagMctbLaZYhXkKjz2-7_XScm_FH3fr/exec';
-  
+
   let allQuestions = [];
   let filteredQuestions = [];
+  let quizQuestions = [];
   let currentQuestionIndex = 0;
   let correctCount = 0;
   let selectedCategories = new Set();
   let availableCategories = [];
+  let selectedQuestionCount = 10; // Default
 
   async function loadQuestions() {
     try {
       const res = await fetch(QUESTIONS_URL);
-      
-      if (!res.ok) {
-        throw new Error(`Failed to load questions (${res.status})`);
-      }
-      
+      if (!res.ok) throw new Error(`Failed to load questions (${res.status})`);
       const data = await res.json();
-      
-      if (!Array.isArray(data) || data.length === 0) {
-        throw new Error('No questions received from server');
-      }
-      
-      // Filter approved questions only
+      if (!Array.isArray(data) || data.length === 0) throw new Error('No questions received from server');
       allQuestions = data.filter(q => {
         const approved = q.approved ? q.approved.toString().toLowerCase().trim() : 'no';
         return approved === 'yes' || approved === 'true';
       });
-      
       if (allQuestions.length === 0) {
         document.getElementById('filterSection').innerHTML = 
           '<div class="error">No approved questions found. Please check your spreadsheet.</div>';
         return;
       }
-      
-      // Get unique categories
       availableCategories = [...new Set(allQuestions.map(q => {
         const codebook = q.codebook || q.Codebook || 'Other';
         return codebook.toString().trim();
       }))].sort();
-      
       setupFilterSection();
-// toggleCategory('all'); // <-- disable default selection
-
-      
     } catch (error) {
       console.error('Error loading questions:', error);
       document.getElementById('filterSection').innerHTML = 
@@ -254,17 +50,18 @@
   function setupFilterSection() {
     const filterOptions = document.getElementById('filterOptions');
     const totalQuestions = document.getElementById('totalQuestions');
-    
     totalQuestions.textContent = allQuestions.length;
-    
-    // Add "All Categories" button
+
+    filterOptions.innerHTML = ""; // Clear existing
+
+    // "All Categories" button
     const allBtn = document.createElement('button');
     allBtn.className = 'filter-btn';
     allBtn.textContent = 'All Categories';
-    //allBtn.onclick = () => toggleCategory('all');
+    allBtn.onclick = () => toggleCategory('all');
     filterOptions.appendChild(allBtn);
-    
-    // Add category buttons
+
+    // Category buttons (all unclicked by default)
     availableCategories.forEach(category => {
       const btn = document.createElement('button');
       btn.className = 'filter-btn';
@@ -272,22 +69,37 @@
       btn.onclick = () => toggleCategory(category);
       filterOptions.appendChild(btn);
     });
-    
-    // Select all by default
-    toggleCategory('all');
+
+    // Add Question Count Selection (NEW)
+    let countDiv = document.createElement('div');
+    countDiv.style.margin = "1rem 0";
+    countDiv.innerHTML = `
+      <label for="questionCount" style="font-weight:bold;">Number of Questions:&nbsp;</label>
+      <select id="questionCount" onchange="setQuestionCount(this.value)">
+        <option value="1">1</option>
+        <option value="10" selected>10</option>
+        <option value="20">20</option>
+      </select>
+    `;
+    filterOptions.appendChild(countDiv);
+
+    // Start with nothing selected!
+    selectedCategories.clear();
+    updateSelectedCount();
   }
 
+  // Selection logic
   function toggleCategory(category) {
     const buttons = document.querySelectorAll('.filter-btn');
-    
     if (category === 'all') {
-      // Select all categories
-      selectedCategories.clear();
-      availableCategories.forEach(cat => selectedCategories.add(cat));
-      
-      buttons.forEach(btn => {
-        btn.classList.add('active');
-      });
+      // If all are already selected, deselect all. Otherwise, select all.
+      if (selectedCategories.size === availableCategories.length) {
+        selectedCategories.clear();
+        buttons.forEach(btn => btn.classList.remove('active'));
+      } else {
+        availableCategories.forEach(cat => selectedCategories.add(cat));
+        buttons.forEach(btn => btn.classList.add('active'));
+      }
     } else {
       // Toggle individual category
       if (selectedCategories.has(category)) {
@@ -295,8 +107,6 @@
       } else {
         selectedCategories.add(category);
       }
-      
-      // Update button states
       buttons.forEach(btn => {
         if (btn.textContent === 'All Categories') {
           btn.classList.toggle('active', selectedCategories.size === availableCategories.length);
@@ -304,8 +114,7 @@
           btn.classList.toggle('active', selectedCategories.has(category));
         }
       });
-      
-      // If all individual categories are selected, activate "All Categories"
+      // If all are selected, "All Categories" is also active
       const allBtn = Array.from(buttons).find(btn => btn.textContent === 'All Categories');
       if (selectedCategories.size === availableCategories.length) {
         allBtn.classList.add('active');
@@ -313,88 +122,70 @@
         allBtn.classList.remove('active');
       }
     }
-    
     updateSelectedCount();
   }
 
+  // Question count selection logic
+  function setQuestionCount(val) {
+    selectedQuestionCount = parseInt(val, 10) || 10;
+  }
+
+  // Filter question set on selection
   function updateSelectedCount() {
     filteredQuestions = allQuestions.filter(q => {
       const codebook = q.codebook || q.Codebook || 'Other';
       return selectedCategories.has(codebook.toString().trim());
     });
-    
     document.getElementById('selectedCount').textContent = filteredQuestions.length;
     document.getElementById('startQuizBtn').disabled = filteredQuestions.length === 0;
   }
 
+  // Quiz logic
   function startQuiz() {
     if (filteredQuestions.length === 0) {
       alert('Please select at least one category!');
       return;
     }
-    
-    // Shuffle questions for variety
-    filteredQuestions = filteredQuestions.sort(() => Math.random() - 0.5);
-    
-    // Hide filter section and show quiz
+    // Shuffle and slice to chosen count
+    quizQuestions = filteredQuestions.sort(() => Math.random() - 0.5)
+      .slice(0, Math.min(selectedQuestionCount, filteredQuestions.length));
     document.getElementById('filterSection').classList.add('hidden');
     document.getElementById('questionContainer').classList.remove('hidden');
-    
-    // Reset quiz state
     currentQuestionIndex = 0;
     correctCount = 0;
-    
     showQuestion();
   }
 
   function showQuestion() {
-    if (currentQuestionIndex >= filteredQuestions.length) {
+    if (currentQuestionIndex >= quizQuestions.length) {
       showSummary();
       return;
     }
-
-    const q = filteredQuestions[currentQuestionIndex];
-    
-    // Validate question has required fields
+    const q = quizQuestions[currentQuestionIndex];
     if (!q.question || !q.correct) {
-      console.warn('Skipping invalid question:', q);
       currentQuestionIndex++;
       showQuestion();
       return;
     }
-    
-    // Handle incorrect answers - they might be in one field or separate fields
     let incorrectAnswers = [];
     if (q.incorrect) {
-      // Split by comma if it's a string with multiple answers
       incorrectAnswers = q.incorrect.toString().split(',').map(a => a.trim()).filter(a => a);
     }
-    
-    // Also check for separate incorrect answer columns
     for (let i = 1; i <= 3; i++) {
       const field = q[`incorrect${i}`] || q[`Incorrect${i}`];
-      if (field && field.toString().trim()) {
-        incorrectAnswers.push(field.toString().trim());
-      }
+      if (field && field.toString().trim()) incorrectAnswers.push(field.toString().trim());
     }
-    
-    // Make sure we have at least one incorrect answer
     if (incorrectAnswers.length === 0) {
-      console.warn('No incorrect answers found for question:', q.question);
       currentQuestionIndex++;
       showQuestion();
       return;
     }
-    
-    // Combine and shuffle all answers
     const allAnswers = [...incorrectAnswers, q.correct.toString()];
     const shuffledAnswers = allAnswers.sort(() => Math.random() - 0.5);
-    
     const container = document.getElementById('questionContainer');
-    
     container.innerHTML = `
       <button class="back-btn" onclick="backToCategories()">← Back to Categories</button>
-      <div class="progress">Question ${currentQuestionIndex + 1} of ${filteredQuestions.length}</div>
+      <div class="progress">Question ${currentQuestionIndex + 1} of ${quizQuestions.length}</div>
       <div class="question-box">
         <p><strong>Q${currentQuestionIndex + 1}:</strong> ${q.question}</p>
         <div id="answers"></div>
@@ -404,9 +195,7 @@
         </div>
       </div>
     `;
-
     const answersDiv = document.getElementById('answers');
-    
     shuffledAnswers.forEach(answer => {
       const btn = document.createElement('button');
       btn.textContent = answer;
@@ -416,9 +205,7 @@
   }
 
   function handleAnswer(isCorrect) {
-    if (isCorrect) {
-      correctCount++;
-    }
+    if (isCorrect) correctCount++;
     currentQuestionIndex++;
     showQuestion();
   }
@@ -430,29 +217,20 @@
   }
 
   function showSummary() {
-    const percentage = Math.round((correctCount / filteredQuestions.length) * 100);
+    const percentage = Math.round((correctCount / quizQuestions.length) * 100);
     let message = '';
-    
-    if (percentage >= 90) {
-      message = '🌟 Excellent! You\'re a structural engineering expert!';
-    } else if (percentage >= 75) {
-      message = '👍 Great job! You have strong knowledge.';
-    } else if (percentage >= 60) {
-      message = '👌 Good work! Keep studying :)';
-    } else if (percentage >= 50) {
-      message = '📚 Not bad, but there\'s room for improvement.';
-    } else {
-      message = '📖 Keep learning! Practice makes perfect.';
-    }
-    
-    // Get selected categories for display
+    if (percentage >= 90) message = '🌟 Excellent! You\'re a structural engineering expert!';
+    else if (percentage >= 75) message = '👍 Great job! You have strong knowledge.';
+    else if (percentage >= 60) message = '👌 Good work! Keep studying :)';
+    else if (percentage >= 50) message = '📚 Not bad, but there\'s room for improvement.';
+    else message = '📖 Keep learning! Practice makes perfect.';
     const categoryList = Array.from(selectedCategories).join(', ');
-    
     document.getElementById('questionContainer').innerHTML = '';
     document.getElementById('summary').innerHTML = `
       <h2>Quiz Complete!</h2>
       <p><strong>Categories:</strong> ${categoryList}</p>
-      <p>Your score: <strong>${correctCount} out of ${filteredQuestions.length}</strong></p>
+      <p><strong>Questions Chosen:</strong> ${quizQuestions.length}</p>
+      <p>Your score: <strong>${correctCount} out of ${quizQuestions.length}</strong></p>
       <p>Percentage: <strong>${percentage}%</strong></p>
       <p>${message}</p>
       <button onclick="backToCategories()" style="margin-top: 1rem; background: #007acc; color: white; margin-right: 1rem;">
@@ -464,8 +242,8 @@
     `;
   }
 
-  // Start loading questions when page loads
+  // Make setQuestionCount available globally for inline handler
+  window.setQuestionCount = setQuestionCount;
+
   window.onload = loadQuestions;
 </script>
-</body>
-</html>
