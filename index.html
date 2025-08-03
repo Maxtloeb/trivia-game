@@ -3,17 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Structural Trivia Game</title>
+  <title>Structural Engineering Trivia</title>
   <style>
     body {
       font-family: 'Segoe UI', Roboto, sans-serif;
-      max-width: 800px;
-      margin: auto;
-      padding: 2rem;
-      background-color: #f7faff;
+      background: radial-gradient(circle at top, #f0f4f8, #dbe9f4);
       color: #002b45;
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 1.5rem;
     }
-    .hidden { display: none; }
+    h1, h2 {
+      text-align: center;
+    }
+    .section {
+      margin-bottom: 2rem;
+    }
     .filter-btn {
       margin: 0.3rem;
       padding: 0.5rem 1rem;
@@ -26,17 +31,17 @@
       background-color: #007acc;
       color: white;
     }
-    .progress-bar-container {
-      width: 100%;
-      background-color: #eee;
-      border-radius: 8px;
-      margin-bottom: 10px;
+    .switch {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
-    .progress-bar {
-      height: 12px;
-      background-color: #007acc;
-      border-radius: 8px;
-      transition: width 0.4s ease;
+    select, button {
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .hidden {
+      display: none;
     }
     .question-box {
       background: white;
@@ -44,183 +49,90 @@
       padding: 1rem;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
-    button {
-      cursor: pointer;
-      margin: 0.3rem 0;
-      padding: 0.6rem 1rem;
-      font-size: 1rem;
-      border: none;
-      border-radius: 10px;
-      background-color: #f0f0f0;
-    }
-    .back-btn {
-      background: #ccc;
-      margin-bottom: 1rem;
-    }
-    label {
-      font-weight: bold;
-    }
   </style>
 </head>
 <body>
 
-  <div id="filterSection">
-    <div>
-      <label for="difficultyFilter">Difficulty:</label>
-      <select id="difficultyFilter">
+  <h1>🧠 Structural Trivia Game</h1>
+  <p style="text-align:center;">Test your structural knowledge by selecting a category and difficulty. Then press Start Quiz!</p>
+
+  <div class="section" id="filterSection">
+    <h2>Main Categories</h2>
+    <div id="mainCategories" class="button-group"></div>
+
+    <h2>Questions Per Codebook</h2>
+    <div id="codebookCategories" class="button-group"></div>
+
+    <div style="margin-top:1rem;">
+      <label for="difficulty">Difficulty:</label>
+      <select id="difficulty">
         <option value="">All</option>
         <option value="Easy">Easy</option>
         <option value="Medium">Medium</option>
         <option value="Hard">Hard</option>
       </select>
-      &nbsp;
-      <label for="shuffleToggle">Shuffle Questions:</label>
+    </div>
+
+    <div class="switch">
+      <label for="shuffleToggle">🔀 Shuffle Questions</label>
       <input type="checkbox" id="shuffleToggle" checked>
     </div>
-    <div style="margin-top: 1rem;">
-      <button onclick="toggleCategoryMenu('main')">Main Categories</button>
-      <button onclick="toggleCategoryMenu('codebook')">Questions Per Codebook</button>
-    </div>
-    <div id="mainCategoryMenu"></div>
-    <div id="codebookCategoryMenu" class="hidden"></div>
-    <div style="margin-top: 1rem;">
-      <label for="questionCount">Number of Questions:</label>
-      <select id="questionCount" onchange="setQuestionCount(this.value)">
-        <option value="1">1</option>
-        <option value="10" selected>10</option>
-        <option value="20">20</option>
-      </select>
-    </div>
-    <button id="startQuizBtn" onclick="startQuiz()">Start Quiz</button>
+
+    <button id="startQuizBtn">Start Quiz</button>
   </div>
 
   <div id="questionContainer" class="hidden"></div>
   <div id="summary"></div>
 
   <script>
-    const QUESTIONS_URL = 'https://script.google.com/macros/s/AKfycbwR9J7yC-K9wqE6tNEXQhG0TTrCwL872ORyKbJAwMC1tvYznn0JAgUr7qJUbv_SZcdv/exec';
-
+    const QUESTIONS_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYED_SCRIPT_ID/exec';
     let allQuestions = [];
-    let filteredQuestions = [];
-    let quizQuestions = [];
-    let currentQuestionIndex = 0;
-    let correctCount = 0;
-    let selectedCategories = new Set();
-    let selectedQuestionCount = 10;
-    let activeCategoryField = 'J';
-    let categoryFields = {
-      main: 'J',
-      codebook: 'I'
-    };
 
     async function loadQuestions() {
-      const res = await fetch(QUESTIONS_URL);
-      const data = await res.json();
-      allQuestions = data.filter(q => (q.approved || '').toString().toLowerCase().trim() === 'yes');
-      renderCategoryMenus();
-    }
-
-    function renderCategoryMenus() {
-      ['main', 'codebook'].forEach(type => {
-        const container = document.getElementById(type === 'main' ? 'mainCategoryMenu' : 'codebookCategoryMenu');
-        container.innerHTML = '';
-        const categories = [...new Set(allQuestions.map(q => (q[categoryFields[type]] || 'Other').toString().trim()))].sort();
-        categories.forEach(cat => {
-          const btn = document.createElement('button');
-          btn.className = 'filter-btn';
-          btn.textContent = cat;
-          btn.onclick = () => {
-            selectedCategories.clear();
-            selectedCategories.add(cat);
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-          };
-          container.appendChild(btn);
+      try {
+        const res = await fetch(QUESTIONS_URL);
+        const data = await res.json();
+        allQuestions = data.filter(q => {
+          const approved = q.approved ? q.approved.toString().toLowerCase().trim() : 'no';
+          return approved === 'yes' || approved === 'true';
         });
-      });
-    }
-
-    function toggleCategoryMenu(type) {
-      activeCategoryField = categoryFields[type];
-      document.getElementById('mainCategoryMenu').classList.toggle('hidden', type !== 'main');
-      document.getElementById('codebookCategoryMenu').classList.toggle('hidden', type !== 'codebook');
-    }
-
-    function setQuestionCount(val) {
-      selectedQuestionCount = parseInt(val, 10) || 10;
-    }
-
-    function startQuiz() {
-      const difficulty = document.getElementById('difficultyFilter').value;
-      const shuffle = document.getElementById('shuffleToggle').checked;
-      filteredQuestions = allQuestions.filter(q => {
-        const cat = (q[activeCategoryField] || '').toString().trim();
-        const matchesCategory = selectedCategories.size === 0 || selectedCategories.has(cat);
-        const matchesDifficulty = !difficulty || (q.difficulty || '').toString().toLowerCase() === difficulty.toLowerCase();
-        return matchesCategory && matchesDifficulty;
-      });
-      quizQuestions = shuffle
-        ? filteredQuestions.sort(() => Math.random() - 0.5).slice(0, selectedQuestionCount)
-        : filteredQuestions.slice(0, selectedQuestionCount);
-      currentQuestionIndex = 0;
-      correctCount = 0;
-      document.getElementById('filterSection').classList.add('hidden');
-      document.getElementById('questionContainer').classList.remove('hidden');
-      showQuestion();
-    }
-
-    function showQuestion() {
-      if (currentQuestionIndex >= quizQuestions.length) return showSummary();
-      const q = quizQuestions[currentQuestionIndex];
-      const incorrect = [q.incorrect1, q.incorrect2, q.incorrect3].filter(Boolean);
-      const options = [...incorrect, q.correct].sort(() => Math.random() - 0.5);
-      const container = document.getElementById('questionContainer');
-      container.innerHTML = `
-        <button class="back-btn" onclick="backToCategories()">← Back</button>
-        <div class="progress-bar-container"><div class="progress-bar" style="width:${(currentQuestionIndex/quizQuestions.length)*100}%"></div></div>
-        <div class="question-box">
-          <p><strong>Q${currentQuestionIndex + 1}:</strong> ${q.question}</p>
-          <div id="answers"></div>
-          <div id="feedback"></div>
-        </div>`;
-      const answersDiv = document.getElementById('answers');
-      options.forEach(ans => {
-        const btn = document.createElement('button');
-        btn.textContent = ans;
-        btn.onclick = () => handleAnswer(ans === q.correct, btn, q.correct);
-        answersDiv.appendChild(btn);
-      });
-    }
-
-    function handleAnswer(correct, btn, answer) {
-      const feedback = document.getElementById('feedback');
-      Array.from(document.getElementById('answers').children).forEach(b => b.disabled = true);
-      if (correct) {
-        correctCount++;
-        feedback.innerHTML = '<span style="color:green">Correct!</span>';
-        btn.style.backgroundColor = '#c9f7c9';
-      } else {
-        feedback.innerHTML = `Incorrect! Correct answer: <b>${answer}</b>`;
-        btn.style.backgroundColor = '#ffd6d6';
+        renderCategoryButtons();
+      } catch (err) {
+        console.error('Failed to load questions:', err);
       }
-      setTimeout(() => { currentQuestionIndex++; showQuestion(); }, 1250);
     }
 
-    function showSummary() {
-      const percent = Math.round((correctCount / quizQuestions.length) * 100);
-      document.getElementById('questionContainer').innerHTML = `
-        <h2>Quiz Complete</h2>
-        <p>Score: ${correctCount} / ${quizQuestions.length} (${percent}%)</p>
-        <button onclick="backToCategories()">Back to Categories</button>
-      `;
-    }
+    function renderCategoryButtons() {
+      const mainSet = new Set();
+      const codebookSet = new Set();
 
-    function backToCategories() {
-      document.getElementById('questionContainer').classList.add('hidden');
-      document.getElementById('filterSection').classList.remove('hidden');
+      allQuestions.forEach(q => {
+        if (q["Main Category"]) mainSet.add(q["Main Category"].toString().trim());
+        if (q["codebook"]) codebookSet.add(q["codebook"].toString().trim());
+      });
+
+      const mainContainer = document.getElementById('mainCategories');
+      const codebookContainer = document.getElementById('codebookCategories');
+
+      mainSet.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.textContent = cat;
+        btn.className = 'filter-btn';
+        btn.onclick = () => btn.classList.toggle('active');
+        mainContainer.appendChild(btn);
+      });
+
+      codebookSet.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.textContent = cat;
+        btn.className = 'filter-btn';
+        btn.onclick = () => btn.classList.toggle('active');
+        codebookContainer.appendChild(btn);
+      });
     }
 
     window.onload = loadQuestions;
   </script>
+
 </body>
 </html>
