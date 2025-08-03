@@ -68,6 +68,9 @@
   </style>
 </head>
 <body>
+  <h1 style="text-align:center; font-size: 2rem; margin-bottom: 1rem;">Structural Trivia</h1>
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Steel-frame_building_under_construction.jpg/640px-Steel-frame_building_under_construction.jpg" style="width:100%; border-radius: 12px; margin-bottom: 2rem;" alt="Trivia banner image"/>
+
   <div id="tabButtons">
     <button class="tab-btn active" onclick="switchTab('main')">Main Categories</button>
     <button class="tab-btn" onclick="switchTab('codebook')">Questions Per Codebook</button>
@@ -128,7 +131,6 @@
     let selectedDifficulty = { main: 'all', codebook: 'all' };
     let questionLimit = { main: 10, codebook: 10 };
     let selectedCategory = null;
-    let selectedButton = null;
 
     async function fetchQuestions() {
       try {
@@ -148,7 +150,6 @@
       document.querySelector(`.tab-btn[onclick="switchTab('${tab}')"]`).classList.add('active');
       currentCategory = tab;
       selectedCategory = null;
-      selectedButton = null;
     }
 
     function renderCategories() {
@@ -162,15 +163,13 @@
         mainSet.add(mainCat);
         codeSet.add(codebook);
       });
-      mainDiv.innerHTML = [...mainSet].sort().map(cat => `<button class="filter-btn" onclick="selectCategory(this, '${cat.replace(/'/g, "\'")}')">${cat}</button>`).join('');
-      codeDiv.innerHTML = [...codeSet].sort().map(cb => `<button class="filter-btn" onclick="selectCategory(this, '${cb.replace(/'/g, "\'")}')">${cb}</button>`).join('');
+      mainDiv.innerHTML = [...mainSet].sort().map(cat => `<button class="filter-btn" onclick="selectCategory('${cat.replace(/'/g, "\'")}', 'main', this)">${cat}</button>`).join('');
+      codeDiv.innerHTML = [...codeSet].sort().map(cb => `<button class="filter-btn" onclick="selectCategory('${cb.replace(/'/g, "\'")}', 'codebook', this)">${cb}</button>`).join('');
     }
 
-    function selectCategory(button, cat) {
-      const container = currentCategory === 'main' ? document.getElementById('mainCategories') : document.getElementById('codebookCategories');
-      container.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-      button.classList.add('active');
-      selectedButton = button;
+    function selectCategory(cat, tab, btn) {
+      document.querySelectorAll(`#${tab} .filter-btn`).forEach(el => el.classList.remove('active'));
+      btn.classList.add('active');
       selectedCategory = cat;
     }
 
@@ -215,6 +214,7 @@
       if (q.incorrect3) answers.push(q.incorrect3);
       const shuffled = answers.filter(a => a && a.trim()).sort(() => Math.random() - 0.5);
       container.innerHTML = `
+        <button onclick="goBack()" style="margin-bottom: 1rem; background: #ccc; border: none; padding: 0.5rem 1rem; border-radius: 8px;">← Back to Categories</button>
         <p><strong>Q${currentIndex + 1}:</strong> ${q.question}</p>
         ${shuffled.map(a => `<button class="answer-btn" onclick="checkAnswer('${a.replace(/'/g, "\'")}', '${q.correct.replace(/'/g, "\'")}')">${a}</button>`).join('')}
       `;
@@ -224,6 +224,11 @@
       if (choice === correct) correctCount++;
       currentIndex++;
       showQuestion();
+    }
+
+    function goBack() {
+      document.getElementById('questionContainer').classList.add('hidden');
+      document.getElementById(currentCategory).classList.remove('hidden');
     }
 
     function showSummary() {
