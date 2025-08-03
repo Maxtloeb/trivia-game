@@ -129,8 +129,8 @@
       allQuestions.forEach(q => {
         const mainCat = q.MainCategory?.trim() || 'Other';
         const codebook = q.codebook?.trim() || q.Codebook?.trim() || 'Other';
-        mainSet.add(mainCat);
-        codeSet.add(codebook);
+        if (mainCat) mainSet.add(mainCat);
+        if (codebook) codeSet.add(codebook);
       });
       main.innerHTML = [...mainSet].sort().map(cat => `<button class="filter-btn" onclick="selectCategory('${cat}')">${cat}</button>`).join('');
       code.innerHTML = [...codeSet].sort().map(cb => `<button class="filter-btn" onclick="selectCategory('${cb}')">${cb}</button>`).join('');
