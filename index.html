@@ -91,7 +91,7 @@
   <div id="summary"></div>
 
   <script>
-    const QUESTIONS_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+    const QUESTIONS_URL = 'https://script.google.com/macros/s/AKfycbwOqCs6AyZtKbbxk9AAt3txu1lTT9_5uLHO5lmK0ik_jy28lpq2Mo9CaElVZPy6fi6c/exec';
     let allQuestions = [];
     let selectedQuestions = [];
     let currentCategory = 'main';
@@ -106,7 +106,7 @@
       try {
         const res = await fetch(QUESTIONS_URL);
         const data = await res.json();
-        allQuestions = data.filter(q => q.approved?.toString().toLowerCase() === 'yes');
+        allQuestions = data.filter(q => q.approved?.toString().toLowerCase().trim() === 'yes');
         renderCategories();
       } catch (e) {
         console.error(e);
@@ -127,13 +127,13 @@
       const mainSet = new Set();
       const codeSet = new Set();
       allQuestions.forEach(q => {
-        const mainCat = q.MainCategory?.trim() || 'Other';
-        const codebook = q.codebook?.trim() || q.Codebook?.trim() || 'Other';
+        const mainCat = q.MainCategory?.toString().trim() || 'Other';
+        const codebook = q.codebook?.toString().trim() || q.Codebook?.toString().trim() || 'Other';
         if (mainCat) mainSet.add(mainCat);
         if (codebook) codeSet.add(codebook);
       });
-      main.innerHTML = [...mainSet].sort().map(cat => `<button class="filter-btn" onclick="selectCategory('${cat}')">${cat}</button>`).join('');
-      code.innerHTML = [...codeSet].sort().map(cb => `<button class="filter-btn" onclick="selectCategory('${cb}')">${cb}</button>`).join('');
+      main.innerHTML = [...mainSet].sort().map(cat => `<button class="filter-btn" onclick="selectCategory('${cat.replace(/'/g, '\\'')}')">${cat}</button>`).join('');
+      code.innerHTML = [...codeSet].sort().map(cb => `<button class="filter-btn" onclick="selectCategory('${cb.replace(/'/g, '\\'')}')">${cb}</button>`).join('');
     }
 
     function selectCategory(cat) {
@@ -156,8 +156,8 @@
       if (!selectedCategory) return alert("Select a category first");
       const filtered = allQuestions.filter(q => {
         const match = currentCategory === 'main'
-          ? q.MainCategory?.trim() === selectedCategory
-          : (q.codebook?.trim() || q.Codebook?.trim()) === selectedCategory;
+          ? q.MainCategory?.toString().trim() === selectedCategory
+          : (q.codebook?.toString().trim() || q.Codebook?.toString().trim()) === selectedCategory;
         const level = q.difficulty || q.Difficulty || 'Unknown';
         return match && (selectedDifficulty === 'all' || level === selectedDifficulty);
       });
@@ -178,7 +178,7 @@
       const allAnswers = [q.correct, q.incorrect1, q.incorrect2, q.incorrect3].sort(() => Math.random() - 0.5);
       container.innerHTML = `
         <p><strong>Q${currentIndex + 1}:</strong> ${q.question}</p>
-        ${allAnswers.map(a => `<button onclick="checkAnswer('${a}', '${q.correct}')">${a}</button>`).join('<br>')}
+        ${allAnswers.map(a => `<button onclick="checkAnswer('${a.replace(/'/g, '\\'')}', '${q.correct.replace(/'/g, '\\')}')">${a}</button>`).join('<br>')}
       `;
     }
 
