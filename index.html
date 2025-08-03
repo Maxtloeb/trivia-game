@@ -208,10 +208,15 @@
       const container = document.getElementById('questionContainer');
       if (currentIndex >= selectedQuestions.length) return showSummary();
       const q = selectedQuestions[currentIndex];
-      const allAnswers = [q.correct, q.incorrect1, q.incorrect2, q.incorrect3].sort(() => Math.random() - 0.5);
+      const answers = [];
+      if (q.correct) answers.push(q.correct);
+      if (q.incorrect1) answers.push(q.incorrect1);
+      if (q.incorrect2) answers.push(q.incorrect2);
+      if (q.incorrect3) answers.push(q.incorrect3);
+      const shuffled = answers.filter(a => a && a.trim()).sort(() => Math.random() - 0.5);
       container.innerHTML = `
         <p><strong>Q${currentIndex + 1}:</strong> ${q.question}</p>
-        ${allAnswers.map(a => `<button class="answer-btn" onclick="checkAnswer('${a.replace(/'/g, "\'")}', '${q.correct.replace(/'/g, "\'")}')">${a}</button>`).join('')}
+        ${shuffled.map(a => `<button class="answer-btn" onclick="checkAnswer('${a.replace(/'/g, "\'")}', '${q.correct.replace(/'/g, "\'")}')">${a}</button>`).join('')}
       `;
     }
 
