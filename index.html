@@ -51,6 +51,20 @@
     .tab-content.active {
       display: block;
     }
+    .answer-btn {
+      margin: 0.5rem 0;
+      padding: 0.6rem 1rem;
+      font-size: 1rem;
+      border: 2px solid #007acc;
+      border-radius: 12px;
+      background-color: #fff;
+      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .answer-btn:hover {
+      background-color: #007acc;
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -69,7 +83,6 @@
         <option value="Medium">Medium</option>
         <option value="Hard">Hard</option>
       </select>
-      <label style="margin-left: 1rem;"><input type="checkbox" id="shuffleToggleMain" onchange="toggleShuffle('main')"> Shuffle</label>
       <label style="margin-left: 1rem;">Questions:
         <select id="questionCountMain" onchange="updateCount('main')">
           <option value="5">5</option>
@@ -91,7 +104,6 @@
         <option value="Medium">Medium</option>
         <option value="Hard">Hard</option>
       </select>
-      <label style="margin-left: 1rem;"><input type="checkbox" id="shuffleToggleCodebook" onchange="toggleShuffle('codebook')"> Shuffle</label>
       <label style="margin-left: 1rem;">Questions:
         <select id="questionCountCodebook" onchange="updateCount('codebook')">
           <option value="5">5</option>
@@ -114,7 +126,6 @@
     let currentIndex = 0;
     let correctCount = 0;
     let selectedDifficulty = { main: 'all', codebook: 'all' };
-    let shuffleQuestions = { main: false, codebook: false };
     let questionLimit = { main: 10, codebook: 10 };
     let selectedCategory = null;
     let selectedButton = null;
@@ -163,10 +174,6 @@
       selectedCategory = cat;
     }
 
-    function toggleShuffle(type) {
-      shuffleQuestions[type] = document.getElementById(`shuffleToggle${capitalize(type)}`).checked;
-    }
-
     function filterByDifficulty(type) {
       selectedDifficulty[type] = document.getElementById(`difficultyFilter${capitalize(type)}`).value;
     }
@@ -188,8 +195,7 @@
         const level = q.difficulty || q.Difficulty || 'Unknown';
         return match && (selectedDifficulty[currentCategory] === 'all' || level === selectedDifficulty[currentCategory]);
       });
-      selectedQuestions = shuffleQuestions[currentCategory] ? filtered.sort(() => Math.random() - 0.5) : filtered;
-      selectedQuestions = selectedQuestions.slice(0, questionLimit[currentCategory]);
+      selectedQuestions = filtered.slice(0, questionLimit[currentCategory]);
       currentIndex = 0;
       correctCount = 0;
       document.getElementById('main').classList.add('hidden');
@@ -205,7 +211,7 @@
       const allAnswers = [q.correct, q.incorrect1, q.incorrect2, q.incorrect3].sort(() => Math.random() - 0.5);
       container.innerHTML = `
         <p><strong>Q${currentIndex + 1}:</strong> ${q.question}</p>
-        ${allAnswers.map(a => `<button onclick="checkAnswer('${a.replace(/'/g, "\'")}', '${q.correct.replace(/'/g, "\'")}')">${a}</button>`).join('<br>')}
+        ${allAnswers.map(a => `<button class="answer-btn" onclick="checkAnswer('${a.replace(/'/g, "\'")}', '${q.correct.replace(/'/g, "\'")}')">${a}</button>`).join('')}
       `;
     }
 
