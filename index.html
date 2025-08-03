@@ -109,7 +109,7 @@
         allQuestions = data.filter(q => q.approved?.toString().toLowerCase().trim() === 'yes');
         renderCategories();
       } catch (e) {
-        console.error(e);
+        console.error('Error fetching questions:', e);
       }
     }
 
@@ -122,8 +122,8 @@
     }
 
     function renderCategories() {
-      const main = document.getElementById('mainCategories');
-      const code = document.getElementById('codebookCategories');
+      const mainDiv = document.getElementById('mainCategories');
+      const codeDiv = document.getElementById('codebookCategories');
       const mainSet = new Set();
       const codeSet = new Set();
       allQuestions.forEach(q => {
@@ -132,8 +132,8 @@
         if (mainCat) mainSet.add(mainCat);
         if (codebook) codeSet.add(codebook);
       });
-      main.innerHTML = [...mainSet].sort().map(cat => `<button class="filter-btn" onclick="selectCategory('${cat.replace(/'/g, '\\'')}')">${cat}</button>`).join('');
-      code.innerHTML = [...codeSet].sort().map(cb => `<button class="filter-btn" onclick="selectCategory('${cb.replace(/'/g, '\\'')}')">${cb}</button>`).join('');
+      mainDiv.innerHTML = [...mainSet].sort().map(cat => `<button class="filter-btn" onclick="selectCategory('${cat.replace(/'/g, "\'")}')">${cat}</button>`).join('');
+      codeDiv.innerHTML = [...codeSet].sort().map(cb => `<button class="filter-btn" onclick="selectCategory('${cb.replace(/'/g, "\'")}')">${cb}</button>`).join('');
     }
 
     function selectCategory(cat) {
@@ -178,7 +178,7 @@
       const allAnswers = [q.correct, q.incorrect1, q.incorrect2, q.incorrect3].sort(() => Math.random() - 0.5);
       container.innerHTML = `
         <p><strong>Q${currentIndex + 1}:</strong> ${q.question}</p>
-        ${allAnswers.map(a => `<button onclick="checkAnswer('${a.replace(/'/g, '\\'')}', '${q.correct.replace(/'/g, '\\')}')">${a}</button>`).join('<br>')}
+        ${allAnswers.map(a => `<button onclick="checkAnswer('${a.replace(/'/g, "\'")}', '${q.correct.replace(/'/g, "\'")}')">${a}</button>`).join('<br>')}
       `;
     }
 
