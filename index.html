@@ -1,7 +1,85 @@
-<script>
-  // Your Google Apps Script URL
-  const QUESTIONS_URL = 'https://script.google.com/macros/s/NEW_WORKING_DEPLOYMENT_ID/exec';
-;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Structural Trivia Game</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: auto;
+      padding: 2rem;
+      background-color: #f7faff;
+      color: #002b45;
+    }
+    .hidden {
+      display: none;
+    }
+    .filter-btn {
+      margin: 0.3rem;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 12px;
+      background-color: #e6f0ff;
+      cursor: pointer;
+    }
+    .filter-btn.active {
+      background-color: #007acc;
+      color: white;
+    }
+    .progress-bar-container {
+      width: 100%;
+      background-color: #eee;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .progress-bar {
+      height: 12px;
+      background-color: #007acc;
+      border-radius: 8px;
+      transition: width 0.4s ease;
+    }
+    .question-box {
+      background: white;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    button {
+      cursor: pointer;
+      margin: 0.3rem 0;
+      padding: 0.6rem 1rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      background-color: #f0f0f0;
+    }
+    .back-btn {
+      background: #ccc;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ✅ Required containers for the script -->
+  <div id="filterSection">
+    <div id="filterOptions"></div>
+    <div style="margin-top: 1rem;">
+      <span>Total Questions: <strong id="totalQuestions">0</strong></span><br>
+      <span>Selected: <strong id="selectedCount">0</strong></span>
+    </div>
+    <button id="startQuizBtn" onclick="startQuiz()">Start Quiz</button>
+  </div>
+
+  <div id="questionContainer" class="hidden"></div>
+  <div id="summary"></div>
+
+  <!-- ✅ Your existing JavaScript pasted below -->
+  <script>
+    const QUESTIONS_URL = 'https://script.google.com/macros/s/AKfycbwR9J7yC-K9wqE6tNEXQhG0TTrCwL872ORyKbJAwMC1tvYznn0JAgUr7qJUbv_SZcdv/exec';
+
 
   let allQuestions = [];
   let filteredQuestions = [];
@@ -278,6 +356,17 @@
   window.setQuestionCount = setQuestionCount;
 
   window.onload = loadQuestions;
-</script>
+
+    // Don't forget to keep the ending line:
+    window.setQuestionCount = setQuestionCount;
+    window.onload = loadQuestions;
+  </script>
+
+</body>
+</html>
+
+
+
+
 
 
