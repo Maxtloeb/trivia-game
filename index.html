@@ -101,6 +101,7 @@
     let shuffleQuestions = false;
     let questionLimit = 10;
     let selectedCategory = null;
+    let selectedButton = null;
 
     async function fetchQuestions() {
       try {
@@ -119,6 +120,8 @@
       document.getElementById(tab).classList.add('active');
       document.querySelector(`.tab-btn[onclick="switchTab('${tab}')"]`).classList.add('active');
       currentCategory = tab;
+      selectedCategory = null;
+      selectedButton = null;
     }
 
     function renderCategories() {
@@ -132,11 +135,14 @@
         if (mainCat) mainSet.add(mainCat);
         if (codebook) codeSet.add(codebook);
       });
-      mainDiv.innerHTML = [...mainSet].sort().map(cat => `<button class="filter-btn" onclick="selectCategory('${cat.replace(/'/g, "\'")}')">${cat}</button>`).join('');
-      codeDiv.innerHTML = [...codeSet].sort().map(cb => `<button class="filter-btn" onclick="selectCategory('${cb.replace(/'/g, "\'")}')">${cb}</button>`).join('');
+      mainDiv.innerHTML = [...mainSet].sort().map(cat => `<button class="filter-btn" onclick="selectCategory(this, '${cat.replace(/'/g, "\'")}')">${cat}</button>`).join('');
+      codeDiv.innerHTML = [...codeSet].sort().map(cb => `<button class="filter-btn" onclick="selectCategory(this, '${cb.replace(/'/g, "\'")}')">${cb}</button>`).join('');
     }
 
-    function selectCategory(cat) {
+    function selectCategory(button, cat) {
+      if (selectedButton) selectedButton.classList.remove('active');
+      button.classList.add('active');
+      selectedButton = button;
       selectedCategory = cat;
     }
 
