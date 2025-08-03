@@ -52,6 +52,8 @@
       display: block;
     }
     .answer-btn {
+      display: block;
+      width: 100%;
       margin: 0.5rem 0;
       padding: 0.6rem 1rem;
       font-size: 1rem;
@@ -59,6 +61,7 @@
       border-radius: 12px;
       background-color: #fff;
       cursor: pointer;
+      text-align: left;
       transition: background-color 0.3s, color 0.3s;
     }
     .answer-btn:hover {
@@ -209,9 +212,9 @@
       const q = selectedQuestions[currentIndex];
       const answers = [];
       if (q.correct) answers.push(q.correct);
-      if (q.incorrect1) answers.push(q.incorrect1);
-      if (q.incorrect2) answers.push(q.incorrect2);
-      if (q.incorrect3) answers.push(q.incorrect3);
+      ['incorrect1', 'incorrect2', 'incorrect3'].forEach(key => {
+        if (q[key]) answers.push(q[key]);
+      });
       const shuffled = answers.filter(a => a && a.trim()).sort(() => Math.random() - 0.5);
       container.innerHTML = `
         <button onclick="goBack()" style="margin-bottom: 1rem; background: #ccc; border: none; padding: 0.5rem 1rem; border-radius: 8px;">← Back to Categories</button>
