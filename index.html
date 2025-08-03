@@ -71,13 +71,20 @@
         <option value="Hard">Hard</option>
       </select>
       <label style="margin-left: 1rem;"><input type="checkbox" id="shuffleToggle" onchange="toggleShuffle()"> Shuffle</label>
+      <label style="margin-left: 1rem;">Questions:
+        <select id="questionCount" onchange="updateCount()">
+          <option value="5">5</option>
+          <option value="10" selected>10</option>
+          <option value="20">20</option>
+        </select>
+      </label>
     </div>
-    <button onclick="startQuiz('main')">Start Quiz</button>
+    <button onclick="startQuiz()">Start Quiz</button>
   </div>
 
   <div id="codebook" class="tab-content">
     <div id="codebookCategories"></div>
-    <button onclick="startQuiz('codebook')">Start Quiz</button>
+    <button onclick="startQuiz()">Start Quiz</button>
   </div>
 
   <div id="questionContainer" class="hidden"></div>
@@ -92,6 +99,8 @@
     let correctCount = 0;
     let selectedDifficulty = 'all';
     let shuffleQuestions = false;
+    let questionLimit = 10;
+    let selectedCategory = null;
 
     async function fetchQuestions() {
       try {
@@ -118,8 +127,8 @@
       const mainSet = new Set();
       const codeSet = new Set();
       allQuestions.forEach(q => {
-        const mainCat = q['primary category']?.trim() || 'Other';
-        const codebook = q.Codebook?.trim() || 'Other';
+        const mainCat = q.MainCategory?.trim() || 'Other';
+        const codebook = q.codebook?.trim() || q.Codebook?.trim() || 'Other';
         mainSet.add(mainCat);
         codeSet.add(codebook);
       });
@@ -128,17 +137,7 @@
     }
 
     function selectCategory(cat) {
-      const filtered = allQuestions.filter(q => {
-        const match = currentCategory === 'main'
-          ? q['primary category']?.trim() === cat
-          : q.Codebook?.trim() === cat;
-        const level = q.difficulty || q.Difficulty || 'Unknown';
-        return match && (selectedDifficulty === 'all' || level === selectedDifficulty);
-      });
-      selectedQuestions = shuffleQuestions ? filtered.sort(() => Math.random() - 0.5) : filtered;
-      currentIndex = 0;
-      correctCount = 0;
-      showQuestion();
+      selectedCategory = cat;
     }
 
     function toggleShuffle() {
@@ -149,8 +148,23 @@
       selectedDifficulty = document.getElementById('difficultyFilter').value;
     }
 
+    function updateCount() {
+      questionLimit = parseInt(document.getElementById('questionCount').value);
+    }
+
     function startQuiz() {
-      if (selectedQuestions.length === 0) return alert("Select a category first");
+      if (!selectedCategory) return alert("Select a category first");
+      const filtered = allQuestions.filter(q => {
+        const match = currentCategory === 'main'
+          ? q.MainCategory?.trim() === selectedCategory
+          : (q.codebook?.trim() || q.Codebook?.trim()) === selectedCategory;
+        const level = q.difficulty || q.Difficulty || 'Unknown';
+        return match && (selectedDifficulty === 'all' || level === selectedDifficulty);
+      });
+      selectedQuestions = shuffleQuestions ? filtered.sort(() => Math.random() - 0.5) : filtered;
+      selectedQuestions = selectedQuestions.slice(0, questionLimit);
+      currentIndex = 0;
+      correctCount = 0;
       document.getElementById('main').classList.add('hidden');
       document.getElementById('codebook').classList.add('hidden');
       document.getElementById('questionContainer').classList.remove('hidden');
