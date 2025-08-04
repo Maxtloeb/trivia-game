@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Structural Trivia Game</title>
   <style>
+    /* Page styling */
     body {
       font-family: 'Segoe UI', Roboto, sans-serif;
       max-width: 800px;
@@ -13,6 +14,17 @@
       background-color: #f7faff;
       color: #002b45;
     }
+
+    /* Heading styling: larger and blockier */
+    h1 {
+      text-align: center;
+      font-size: 3rem;                   /* increased size */
+      font-weight: 800;                  /* extra bold weight */
+      font-family: 'Arial Black', Impact, sans-serif; /* blocky font */
+      letter-spacing: 0.02em;            /* tightened spacing */
+      margin-bottom: 1rem;
+    }
+
     .hidden { display: none; }
     .filter-btn {
       margin: 0.3rem;
@@ -23,6 +35,7 @@
       cursor: pointer;
     }
     .filter-btn.active { background-color: #007acc; color: white; }
+
     .tab-btn {
       padding: 0.5rem 1rem;
       border: 1px solid #ccc;
@@ -32,6 +45,7 @@
       margin-right: 0.5rem;
     }
     .tab-btn.active { background: #007acc; color: white; }
+
     .tab-content {
       display: none;
       border: 1px solid #ccc;
@@ -41,6 +55,7 @@
       border-radius: 0 0 10px 10px;
     }
     .tab-content.active { display: block; }
+
     /* Expanded answer button area */
     .answer-btn {
       display: block;
@@ -57,6 +72,7 @@
       transition: background-color 0.3s, color 0.3s;
     }
     .answer-btn:hover { background-color: #007acc; color: white; }
+
     /* Summary report styles */
     .report-table {
       width: 100%;
@@ -73,7 +89,7 @@
   </style>
 </head>
 <body>
-  <h1 style="text-align:center; font-size: 2rem; margin-bottom: 1rem;">Structural Trivia</h1>
+  <h1>Structural Trivia</h1>
 
   <div id="tabButtons">
     <button class="tab-btn" data-tab="main" onclick="switchTab('main')">Main Categories</button>
@@ -128,6 +144,7 @@
   <div id="summary"></div>
 
   <script>
+    // Hard-coded categories
     const MAIN_CATEGORIES = ['Wood', 'Concrete', 'Steel', 'Masonry', 'General Engineering', 'Wind', 'Seismic', 'General Code', 'Other'];
     const CODEBOOK_CATEGORIES = ['ASCE 7', 'IBC', 'ACI 318', 'NDS', 'TMS 402', 'AISC', 'Other'];
 
@@ -143,19 +160,17 @@
     let selectedCategory = null;
 
     function renderCategories() {
-      const mainDiv = document.getElementById('mainCategories');
-      const codeDiv = document.getElementById('codebookCategories');
-      mainDiv.innerHTML = MAIN_CATEGORIES.map(cat =>
-        `<button class="filter-btn" onclick="selectCategory('${cat}', 'main', this)">${cat}</button>`
-      ).join('');
-      codeDiv.innerHTML = CODEBOOK_CATEGORIES.map(cb =>
-        `<button class="filter-btn" onclick="selectCategory('${cb}', 'codebook', this)">${cb}</button>`
-      ).join('');
+      document.getElementById('mainCategories').innerHTML = MAIN_CATEGORIES
+        .map(cat => `<button class="filter-btn" onclick="selectCategory('${cat}', 'main', this)">${cat}</button>`)
+        .join('');
+      document.getElementById('codebookCategories').innerHTML = CODEBOOK_CATEGORIES
+        .map(cb => `<button class="filter-btn" onclick="selectCategory('${cb}', 'codebook', this)">${cb}</button>`)
+        .join('');
     }
 
     function switchTab(tab) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       document.getElementById(tab).classList.add('active');
       document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
       currentCategory = tab;
@@ -169,14 +184,12 @@
     }
 
     function filterByDifficulty(type) {
-      selectedDifficulty[type] = document.getElementById(`difficultyFilter${capitalize(type)}`).value;
+      selectedDifficulty[type] = document.getElementById(`difficultyFilter${type.charAt(0).toUpperCase() + type.slice(1)}`).value;
     }
 
     function updateCount(type) {
-      questionLimit[type] = parseInt(document.getElementById(`questionCount${capitalize(type)}`).value);
+      questionLimit[type] = parseInt(document.getElementById(`questionCount${type.charAt(0).toUpperCase() + type.slice(1)}`).value);
     }
-
-    function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
     async function fetchQuestions() {
       try {
@@ -191,14 +204,15 @@
     async function startQuiz() {
       if (!selectedCategory) return alert("Select a category first");
       if (allQuestions.length === 0) await fetchQuestions();
-      const filtered = allQuestions.filter(q => {
-        const match = currentCategory === 'main'
-          ? q.MainCategory?.trim() === selectedCategory
-          : (q.codebook?.trim() || q.Codebook?.trim()) === selectedCategory;
-        const level = q.difficulty || q.Difficulty || 'Unknown';
-        return match && (selectedDifficulty[currentCategory] === 'all' || level === selectedDifficulty[currentCategory]);
-      });
-      selectedQuestions = filtered.slice(0, questionLimit[currentCategory]);
+      selectedQuestions = allQuestions
+        .filter(q => {
+          const match = currentCategory === 'main'
+            ? q.MainCategory?.trim() === selectedCategory
+            : (q.codebook?.trim() || q.Codebook?.trim()) === selectedCategory;
+          const level = q.difficulty || q.Difficulty || 'Unknown';
+          return match && (selectedDifficulty[currentCategory] === 'all' || level === selectedDifficulty[currentCategory]);
+        })
+        .slice(0, questionLimit[currentCategory]);
       currentIndex = 0;
       correctCount = 0;
       userResponses = [];
@@ -216,9 +230,13 @@
         .filter(Boolean)
         .sort(() => Math.random() - 0.5);
       container.innerHTML = `
-        <button onclick="goBack()" style="margin-bottom:1rem;background:#ccc;border:none;padding:0.5rem 1rem;border-radius:8px;">← Back to Categories</button>
+        <button onclick="goBack()" style="margin-bottom:1rem;background:#ccc;border:none;padding:0.5rem 1rem;border-radius:8px;">
+          ← Back to Categories
+        </button>
         <p><strong>Q${currentIndex + 1}:</strong> ${q.question}</p>
-        ${answers.map(a => `<button class="answer-btn" onclick="checkAnswer('${a}', '${q.correct}')">${a}</button>`).join('')}
+        ${answers.map(a => 
+          `<button class="answer-btn" onclick="checkAnswer('${a}', '${q.correct}')">${a}</button>`
+        ).join('')}
       `;
     }
 
@@ -242,12 +260,13 @@
     function showSummary() {
       const container = document.getElementById('questionContainer');
       let html = `<h2>Quiz Complete</h2><p>You got ${correctCount} of ${selectedQuestions.length} correct!</p>`;
-      html += `<table class="report-table"><tr><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Result</th></tr>`;
+      html += `<table class="report-table">
+        <tr><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Result</th></tr>`;
       userResponses.forEach(resp => {
         const mark = resp.isCorrect ? '<span class="correct">✓</span>' : '<span class="incorrect">✗</span>';
         html += `<tr><td>${resp.question}</td><td>${resp.chosen}</td><td>${resp.correct}</td><td>${mark}</td></tr>`;
       });
-      html += '</table>';
+      html += `</table>`;
       container.innerHTML = html;
     }
 
