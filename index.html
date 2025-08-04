@@ -13,9 +13,7 @@
       background-color: #f7faff;
       color: #002b45;
     }
-    .hidden {
-      display: none;
-    }
+    .hidden { display: none; }
     .filter-btn {
       margin: 0.3rem;
       padding: 0.5rem 1rem;
@@ -24,10 +22,7 @@
       background-color: #e6f0ff;
       cursor: pointer;
     }
-    .filter-btn.active {
-      background-color: #007acc;
-      color: white;
-    }
+    .filter-btn.active { background-color: #007acc; color: white; }
     .tab-btn {
       padding: 0.5rem 1rem;
       border: 1px solid #ccc;
@@ -36,10 +31,7 @@
       border-radius: 10px 10px 0 0;
       margin-right: 0.5rem;
     }
-    .tab-btn.active {
-      background: #007acc;
-      color: white;
-    }
+    .tab-btn.active { background: #007acc; color: white; }
     .tab-content {
       display: none;
       border: 1px solid #ccc;
@@ -48,15 +40,15 @@
       background: white;
       border-radius: 0 0 10px 10px;
     }
-    .tab-content.active {
-      display: block;
-    }
+    .tab-content.active { display: block; }
+    /* Expanded answer button area */
     .answer-btn {
       display: block;
       width: 100%;
       margin: 0.5rem 0;
-      padding: 0.6rem 1rem;
+      padding: 1rem 1.5rem;
       font-size: 1rem;
+      line-height: 1.4;
       border: 2px solid #007acc;
       border-radius: 12px;
       background-color: #fff;
@@ -64,25 +56,34 @@
       text-align: left;
       transition: background-color 0.3s, color 0.3s;
     }
-    .answer-btn:hover {
-      background-color: #007acc;
-      color: white;
+    .answer-btn:hover { background-color: #007acc; color: white; }
+    /* Summary report styles */
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
     }
+    .report-table th, .report-table td {
+      border: 1px solid #ccc;
+      padding: 0.5rem;
+      text-align: left;
+    }
+    .correct { color: green; font-weight: bold; }
+    .incorrect { color: red; font-weight: bold; }
   </style>
 </head>
 <body>
   <h1 style="text-align:center; font-size: 2rem; margin-bottom: 1rem;">Structural Trivia</h1>
-  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Steel-frame_building_under_construction.jpg/640px-Steel-frame_building_under_construction.jpg" style="width:100%; border-radius: 12px; margin-bottom: 2rem;" alt="Trivia banner image"/>
 
   <div id="tabButtons">
-    <button class="tab-btn active" onclick="switchTab('main')">Main Categories</button>
-    <button class="tab-btn" onclick="switchTab('codebook')">Questions Per Codebook</button>
+    <button class="tab-btn" data-tab="main" onclick="switchTab('main')">Main Categories</button>
+    <button class="tab-btn" data-tab="codebook" onclick="switchTab('codebook')">Questions Per Codebook</button>
   </div>
 
-  <div id="main" class="tab-content active">
+  <div id="main" class="tab-content">
     <div id="mainCategories"></div>
-    <div style="margin-top: 1rem;">
-      <label for="difficultyFilterMain">Filter by Difficulty:</label>
+    <div style="margin-top: 1rem; display: flex; align-items: center;">
+      <label for="difficultyFilterMain">Filter by Difficulty:&nbsp;</label>
       <select id="difficultyFilterMain" onchange="filterByDifficulty('main')">
         <option value="all">All</option>
         <option value="Easy">Easy</option>
@@ -90,46 +91,50 @@
         <option value="Hard">Hard</option>
         <option value="Impossible">Impossible</option>
       </select>
-      <label style="margin-left: 1rem;">Questions:
+      <label style="margin-left: 1rem;">Questions:&nbsp;
         <select id="questionCountMain" onchange="updateCount('main')">
           <option value="5">5</option>
           <option value="10" selected>10</option>
           <option value="20">20</option>
         </select>
       </label>
+      <button onclick="startQuiz()" style="margin-left: auto; padding: 0.5rem 1rem;">Start Quiz</button>
     </div>
-    <button onclick="startQuiz()">Start Quiz</button>
   </div>
 
   <div id="codebook" class="tab-content">
     <div id="codebookCategories"></div>
-    <div style="margin-top: 1rem;">
-      <label for="difficultyFilterCodebook">Filter by Difficulty:</label>
+    <div style="margin-top: 1rem; display: flex; align-items: center;">
+      <label for="difficultyFilterCodebook">Filter by Difficulty:&nbsp;</label>
       <select id="difficultyFilterCodebook" onchange="filterByDifficulty('codebook')">
         <option value="all">All</option>
         <option value="Easy">Easy</option>
         <option value="Medium">Medium</option>
-        <option value="Hard">Hard</option> 
+        <option value="Hard">Hard</option>
         <option value="Impossible">Impossible</option>
       </select>
-      <label style="margin-left: 1rem;">Questions:
+      <label style="margin-left: 1rem;">Questions:&nbsp;
         <select id="questionCountCodebook" onchange="updateCount('codebook')">
           <option value="5">5</option>
           <option value="10" selected>10</option>
           <option value="20">20</option>
         </select>
       </label>
+      <button onclick="startQuiz()" style="margin-left: auto; padding: 0.5rem 1rem;">Start Quiz</button>
     </div>
-    <button onclick="startQuiz()">Start Quiz</button>
   </div>
 
   <div id="questionContainer" class="hidden"></div>
   <div id="summary"></div>
 
   <script>
+    const MAIN_CATEGORIES = ['Wood', 'Concrete', 'Steel', 'Masonry', 'General Engineering', 'Wind', 'Seismic', 'General Code', 'Other'];
+    const CODEBOOK_CATEGORIES = ['ASCE 7', 'IBC', 'ACI 318', 'NDS', 'TMS 402', 'AISC', 'Other'];
+
     const QUESTIONS_URL = 'https://script.google.com/macros/s/AKfycbwOqCs6AyZtKbbxk9AAt3txu1lTT9_5uLHO5lmK0ik_jy28lpq2Mo9CaElVZPy6fi6c/exec';
     let allQuestions = [];
     let selectedQuestions = [];
+    let userResponses = [];
     let currentCategory = 'main';
     let currentIndex = 0;
     let correctCount = 0;
@@ -137,39 +142,24 @@
     let questionLimit = { main: 10, codebook: 10 };
     let selectedCategory = null;
 
-    async function fetchQuestions() {
-      try {
-        const res = await fetch(QUESTIONS_URL);
-        const data = await res.json();
-        allQuestions = data.filter(q => q.approved?.toString().toLowerCase().trim() === 'yes');
-        renderCategories();
-      } catch (e) {
-        console.error('Error fetching questions:', e);
-      }
+    function renderCategories() {
+      const mainDiv = document.getElementById('mainCategories');
+      const codeDiv = document.getElementById('codebookCategories');
+      mainDiv.innerHTML = MAIN_CATEGORIES.map(cat =>
+        `<button class="filter-btn" onclick="selectCategory('${cat}', 'main', this)">${cat}</button>`
+      ).join('');
+      codeDiv.innerHTML = CODEBOOK_CATEGORIES.map(cb =>
+        `<button class="filter-btn" onclick="selectCategory('${cb}', 'codebook', this)">${cb}</button>`
+      ).join('');
     }
 
     function switchTab(tab) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
       document.getElementById(tab).classList.add('active');
-      document.querySelector(`.tab-btn[onclick="switchTab('${tab}')"]`).classList.add('active');
+      document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
       currentCategory = tab;
       selectedCategory = null;
-    }
-
-    function renderCategories() {
-      const mainDiv = document.getElementById('mainCategories');
-      const codeDiv = document.getElementById('codebookCategories');
-      const mainSet = new Set();
-      const codeSet = new Set();
-      allQuestions.forEach(q => {
-        const mainCat = q.MainCategory?.toString().trim() || 'Other';
-        const codebook = q.codebook?.toString().trim() || q.Codebook?.toString().trim() || 'Other';
-        mainSet.add(mainCat);
-        codeSet.add(codebook);
-      });
-      mainDiv.innerHTML = [...mainSet].sort().map(cat => `<button class="filter-btn" onclick="selectCategory('${cat.replace(/'/g, "\'")}', 'main', this)">${cat}</button>`).join('');
-      codeDiv.innerHTML = [...codeSet].sort().map(cb => `<button class="filter-btn" onclick="selectCategory('${cb.replace(/'/g, "\'")}', 'codebook', this)">${cb}</button>`).join('');
     }
 
     function selectCategory(cat, tab, btn) {
@@ -186,22 +176,32 @@
       questionLimit[type] = parseInt(document.getElementById(`questionCount${capitalize(type)}`).value);
     }
 
-    function capitalize(s) {
-      return s.charAt(0).toUpperCase() + s.slice(1);
+    function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+    async function fetchQuestions() {
+      try {
+        const res = await fetch(QUESTIONS_URL);
+        const data = await res.json();
+        allQuestions = data.filter(q => q.approved?.toLowerCase().trim() === 'yes');
+      } catch (e) {
+        console.error('Error fetching questions:', e);
+      }
     }
 
-    function startQuiz() {
+    async function startQuiz() {
       if (!selectedCategory) return alert("Select a category first");
+      if (allQuestions.length === 0) await fetchQuestions();
       const filtered = allQuestions.filter(q => {
         const match = currentCategory === 'main'
-          ? q.MainCategory?.toString().trim() === selectedCategory
-          : (q.codebook?.toString().trim() || q.Codebook?.toString().trim()) === selectedCategory;
+          ? q.MainCategory?.trim() === selectedCategory
+          : (q.codebook?.trim() || q.Codebook?.trim()) === selectedCategory;
         const level = q.difficulty || q.Difficulty || 'Unknown';
         return match && (selectedDifficulty[currentCategory] === 'all' || level === selectedDifficulty[currentCategory]);
       });
       selectedQuestions = filtered.slice(0, questionLimit[currentCategory]);
       currentIndex = 0;
       correctCount = 0;
+      userResponses = [];
       document.getElementById('main').classList.add('hidden');
       document.getElementById('codebook').classList.add('hidden');
       document.getElementById('questionContainer').classList.remove('hidden');
@@ -212,20 +212,23 @@
       const container = document.getElementById('questionContainer');
       if (currentIndex >= selectedQuestions.length) return showSummary();
       const q = selectedQuestions[currentIndex];
-      const answers = [];
-      if (q.correct) answers.push(q.correct);
-      ['incorrect1', 'incorrect2', 'incorrect3'].forEach(key => {
-        if (q[key]) answers.push(q[key]);
-      });
-      const shuffled = answers.filter(a => a && a.trim()).sort(() => Math.random() - 0.5);
+      const answers = [q.correct, q.incorrect1, q.incorrect2, q.incorrect3]
+        .filter(Boolean)
+        .sort(() => Math.random() - 0.5);
       container.innerHTML = `
-        <button onclick="goBack()" style="margin-bottom: 1rem; background: #ccc; border: none; padding: 0.5rem 1rem; border-radius: 8px;">← Back to Categories</button>
+        <button onclick="goBack()" style="margin-bottom:1rem;background:#ccc;border:none;padding:0.5rem 1rem;border-radius:8px;">← Back to Categories</button>
         <p><strong>Q${currentIndex + 1}:</strong> ${q.question}</p>
-        ${shuffled.map(a => `<button class="answer-btn" onclick="checkAnswer('${a.replace(/'/g, "\'")}', '${q.correct.replace(/'/g, "\'")}')">${a}</button>`).join('')}
+        ${answers.map(a => `<button class="answer-btn" onclick="checkAnswer('${a}', '${q.correct}')">${a}</button>`).join('')}
       `;
     }
 
     function checkAnswer(choice, correct) {
+      userResponses.push({
+        question: selectedQuestions[currentIndex].question,
+        chosen: choice,
+        correct: correct,
+        isCorrect: choice === correct
+      });
       if (choice === correct) correctCount++;
       currentIndex++;
       showQuestion();
@@ -233,15 +236,25 @@
 
     function goBack() {
       document.getElementById('questionContainer').classList.add('hidden');
-      document.getElementById(currentCategory).classList.remove('hidden');
+      document.getElementById(currentCategory).classList.remove('active');
     }
 
     function showSummary() {
-      document.getElementById('questionContainer').innerHTML = `<h2>Quiz Complete</h2><p>You got ${correctCount} of ${selectedQuestions.length} correct!</p>`;
+      const container = document.getElementById('questionContainer');
+      let html = `<h2>Quiz Complete</h2><p>You got ${correctCount} of ${selectedQuestions.length} correct!</p>`;
+      html += `<table class="report-table"><tr><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Result</th></tr>`;
+      userResponses.forEach(resp => {
+        const mark = resp.isCorrect ? '<span class="correct">✓</span>' : '<span class="incorrect">✗</span>';
+        html += `<tr><td>${resp.question}</td><td>${resp.chosen}</td><td>${resp.correct}</td><td>${mark}</td></tr>`;
+      });
+      html += '</table>';
+      container.innerHTML = html;
     }
 
-    window.onload = fetchQuestions;
+    document.addEventListener('DOMContentLoaded', () => {
+      renderCategories();
+      switchTab('main');
+    });
   </script>
 </body>
 </html>
-
