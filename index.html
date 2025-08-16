@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Structural Trivia Game</title>
   <style>
-    /* Page styling */
     body {
       font-family: 'Segoe UI', Roboto, sans-serif;
       max-width: 800px;
@@ -14,17 +13,14 @@
       background-color: #f7faff;
       color: #002b45;
     }
-
-    /* Heading styling: larger and blockier */
     h1 {
       text-align: center;
-      font-size: 3rem;                   /* increased size */
-      font-weight: 800;                  /* extra bold weight */
-      font-family: 'Arial Black', Impact, sans-serif; /* blocky font */
-      letter-spacing: 0.02em;            /* tightened spacing */
+      font-size: 3rem;
+      font-weight: 800;
+      font-family: 'Arial Black', Impact, sans-serif;
+      letter-spacing: 0.02em;
       margin-bottom: 1rem;
     }
-
     .hidden { display: none; }
     .filter-btn {
       margin: 0.3rem;
@@ -36,27 +32,6 @@
     }
     .filter-btn.active { background-color: #007acc; color: white; }
 
-    .tab-btn {
-      padding: 0.5rem 1rem;
-      border: 1px solid #ccc;
-      background: #fff;
-      cursor: pointer;
-      border-radius: 10px 10px 0 0;
-      margin-right: 0.5rem;
-    }
-    .tab-btn.active { background: #007acc; color: white; }
-
-    .tab-content {
-      display: none;
-      border: 1px solid #ccc;
-      border-top: none;
-      padding: 1rem;
-      background: white;
-      border-radius: 0 0 10px 10px;
-    }
-    .tab-content.active { display: block; }
-
-    /* Expanded answer button area */
     .answer-btn {
       display: block;
       width: 100%;
@@ -73,7 +48,6 @@
     }
     .answer-btn:hover { background-color: #007acc; color: white; }
 
-    /* Summary report styles */
     .report-table {
       width: 100%;
       border-collapse: collapse;
@@ -86,57 +60,49 @@
     }
     .correct { color: green; font-weight: bold; }
     .incorrect { color: red; font-weight: bold; }
+
+    .controls {
+      margin-top: 1rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;
+    }
+    .pill {
+      background:#fff; border:1px solid #c9d7e3; padding:0.5rem 0.75rem; border-radius:10px;
+    }
   </style>
+  <!-- SheetJS (reads .xlsx in the browser) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <h1>Structural Trivia</h1>
 
-  <div id="tabButtons">
-    <button class="tab-btn" data-tab="main" onclick="switchTab('main')">Main Categories</button>
-    <button class="tab-btn" data-tab="codebook" onclick="switchTab('codebook')">Questions Per Codebook</button>
-  </div>
-
-  <div id="main" class="tab-content">
-    <div id="mainCategories"></div>
-    <div style="margin-top: 1rem; display: flex; align-items: center;">
-      <label for="difficultyFilterMain">Filter by Difficulty:&nbsp;</label>
-      <select id="difficultyFilterMain" onchange="filterByDifficulty('main')">
-        <option value="all">All</option>
-        <option value="Easy">Easy</option>
-        <option value="Medium">Medium</option>
-        <option value="Hard">Hard</option>
-        <option value="Impossible">Impossible</option>
-      </select>
-      <label style="margin-left: 1rem;">Questions:&nbsp;
-        <select id="questionCountMain" onchange="updateCount('main')">
-          <option value="5">5</option>
-          <option value="10" selected>10</option>
-          <option value="20">20</option>
-        </select>
+  <!-- Loader / Single-tab Filters -->
+  <div id="panel">
+    <div class="pill">
+      <label><strong>Upload .xlsx:</strong>
+        <input id="fileInput" type="file" accept=".xlsx,.xls" />
       </label>
-      <button onclick="startQuiz()" style="margin-left: auto; padding: 0.5rem 1rem;">Start Quiz</button>
+      <small style="margin-left:0.5rem;">Sheet name: <code>Trivia Game</code></small>
     </div>
-  </div>
 
-  <div id="codebook" class="tab-content">
-    <div id="codebookCategories"></div>
-    <div style="margin-top: 1rem; display: flex; align-items: center;">
-      <label for="difficultyFilterCodebook">Filter by Difficulty:&nbsp;</label>
-      <select id="difficultyFilterCodebook" onchange="filterByDifficulty('codebook')">
-        <option value="all">All</option>
-        <option value="Easy">Easy</option>
-        <option value="Medium">Medium</option>
-        <option value="Hard">Hard</option>
-        <option value="Impossible">Impossible</option>
+    <div id="categoryBar" style="margin-top: 1rem;"></div>
+
+    <div class="controls">
+      <label for="difficultyFilter">Difficulty:&nbsp;</label>
+      <select id="difficultyFilter">
+        <option value="all" selected>All</option>
+        <option value="easy">Easy</option>
+        <option value="medium">Medium</option>
+        <option value="hard">Hard</option>
       </select>
-      <label style="margin-left: 1rem;">Questions:&nbsp;
-        <select id="questionCountCodebook" onchange="updateCount('codebook')">
+
+      <label>Questions:&nbsp;
+        <select id="questionCount">
           <option value="5">5</option>
           <option value="10" selected>10</option>
           <option value="20">20</option>
         </select>
       </label>
-      <button onclick="startQuiz()" style="margin-left: auto; padding: 0.5rem 1rem;">Start Quiz</button>
+
+      <button id="startBtn" style="margin-left:auto; padding:0.5rem 1rem;">Start Quiz</button>
     </div>
   </div>
 
@@ -144,105 +110,170 @@
   <div id="summary"></div>
 
   <script>
-    // Hard-coded categories
-    const MAIN_CATEGORIES = ['Wood', 'Concrete', 'Steel', 'Masonry', 'General Engineering', 'Wind', 'Seismic', 'General Code', 'Other'];
-    const CODEBOOK_CATEGORIES = ['ASCE 7', 'IBC', 'ACI 318', 'NDS', 'TMS 402', 'AISC', 'Other'];
+    // ===== Spreadsheet contract (case-insensitive) =====
+    const REQUIRED_HEADERS = [
+      'question','correct','incorrect1','incorrect2','incorrect3',
+      'maincategory','difficulty','codebook','coderef','status'
+    ];
 
-    const QUESTIONS_URL = 'https://script.google.com/macros/s/AKfycbwOqCs6AyZtKbbxk9AAt3txu1lTT9_5uLHO5lmK0ik_jy28lpq2Mo9CaElVZPy6fi6c/exec';
-    let allQuestions = [];
+    // ===== State =====
+    let allRows = [];          // approved-only
+    let selectedCategory = null;
     let selectedQuestions = [];
-    let userResponses = [];
-    let currentCategory = 'main';
     let currentIndex = 0;
     let correctCount = 0;
-    let selectedDifficulty = { main: 'all', codebook: 'all' };
-    let questionLimit = { main: 10, codebook: 10 };
-    let selectedCategory = null;
+    let userResponses = [];
 
-    function renderCategories() {
-      document.getElementById('mainCategories').innerHTML = MAIN_CATEGORIES
-        .map(cat => `<button class="filter-btn" onclick="selectCategory('${cat}', 'main', this)">${cat}</button>`)
-        .join('');
-      document.getElementById('codebookCategories').innerHTML = CODEBOOK_CATEGORIES
-        .map(cb => `<button class="filter-btn" onclick="selectCategory('${cb}', 'codebook', this)">${cb}</button>`)
-        .join('');
-    }
+    // ===== Utils =====
+    const norm = s => String(s ?? '').trim();
+    const lc = s => norm(s).toLowerCase();
 
-    function switchTab(tab) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      document.getElementById(tab).classList.add('active');
-      document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
-      currentCategory = tab;
-      selectedCategory = null;
-    }
-
-    function selectCategory(cat, tab, btn) {
-      document.querySelectorAll(`#${tab} .filter-btn`).forEach(el => el.classList.remove('active'));
-      btn.classList.add('active');
-      selectedCategory = cat;
-    }
-
-    function filterByDifficulty(type) {
-      selectedDifficulty[type] = document.getElementById(`difficultyFilter${type.charAt(0).toUpperCase() + type.slice(1)}`).value;
-    }
-
-    function updateCount(type) {
-      questionLimit[type] = parseInt(document.getElementById(`questionCount${type.charAt(0).toUpperCase() + type.slice(1)}`).value);
-    }
-
-    async function fetchQuestions() {
-      try {
-        const res = await fetch(QUESTIONS_URL);
-        const data = await res.json();
-        allQuestions = data.filter(q => q.approved?.toLowerCase().trim() === 'yes');
-      } catch (e) {
-        console.error('Error fetching questions:', e);
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
       }
+      return a;
     }
 
-    async function startQuiz() {
-      if (!selectedCategory) return alert("Select a category first");
-      if (allQuestions.length === 0) await fetchQuestions();
-      selectedQuestions = allQuestions
-        .filter(q => {
-          const match = currentCategory === 'main'
-            ? q.MainCategory?.trim() === selectedCategory
-            : (q.codebook?.trim() || q.Codebook?.trim()) === selectedCategory;
-          const level = q.difficulty || q.Difficulty || 'Unknown';
-          return match && (selectedDifficulty[currentCategory] === 'all' || level === selectedDifficulty[currentCategory]);
-        })
-        .slice(0, questionLimit[currentCategory]);
-      currentIndex = 0;
-      correctCount = 0;
-      userResponses = [];
-      document.getElementById('main').classList.add('hidden');
-      document.getElementById('codebook').classList.add('hidden');
-      document.getElementById('questionContainer').classList.remove('hidden');
-      showQuestion();
+    function mapHeadersToRequired(obj) {
+      const map = {};
+      const keys = Object.keys(obj || {});
+      for (const k of keys) {
+        const nk = lc(k);
+        const hit = REQUIRED_HEADERS.find(h => h === nk);
+        if (hit) map[k] = hit;
+      }
+      return map;
+    }
+
+    function normalizeRow(raw, headerMap) {
+      const out = {};
+      for (const [orig, required] of Object.entries(headerMap)) {
+        out[required] = norm(raw[orig]);
+      }
+      // --- APPROVAL ENFORCEMENT ---
+      const approvedKey = Object.keys(raw).find(k => lc(k) === 'approved');
+      const statusKey   = Object.keys(raw).find(k => lc(k) === 'status'); // fallback
+      const approvedVal = approvedKey ? lc(raw[approvedKey])
+                        : statusKey   ? lc(raw[statusKey])
+                        : 'no'; // default to not approved if neither exists
+      out.approved = approvedVal; // keep lowercased
+      return out;
+    }
+
+    function validateHeaders(firstRow) {
+      const headerMap = mapHeadersToRequired(firstRow || {});
+      const present = new Set(Object.values(headerMap));
+      const missing = REQUIRED_HEADERS.filter(h => !present.has(h));
+      // We don't require 'approved' as a header, but we will enforce it below.
+      if (missing.length) {
+        // Only warn about the truly required quiz columns
+        const essentials = missing.join(', ');
+        if (essentials) throw new Error(`Missing required columns: ${essentials}`);
+      }
+      return headerMap;
+    }
+
+    // ===== UI builders =====
+    function renderCategoriesFromData(rows) {
+      const cats = Array.from(new Set(rows.map(r => r.maincategory).filter(Boolean))).sort();
+      const html = cats.map(cat => `<button class="filter-btn" data-cat="${cat}">${cat}</button>`).join('');
+      const bar = document.getElementById('categoryBar');
+      bar.innerHTML = html;
+
+      bar.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          bar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          selectedCategory = btn.dataset.cat;
+        });
+      });
     }
 
     function showQuestion() {
       const container = document.getElementById('questionContainer');
       if (currentIndex >= selectedQuestions.length) return showSummary();
+
       const q = selectedQuestions[currentIndex];
-      const answers = [q.correct, q.incorrect1, q.incorrect2, q.incorrect3]
-        .filter(Boolean)
-        .sort(() => Math.random() - 0.5);
+      const answers = shuffle([q.correct, q.incorrect1, q.incorrect2, q.incorrect3].filter(Boolean));
+
       container.innerHTML = `
         <button onclick="goBack()" style="margin-bottom:1rem;background:#ccc;border:none;padding:0.5rem 1rem;border-radius:8px;">
-          ← Back to Categories
+          ← Back
         </button>
         <p><strong>Q${currentIndex + 1}:</strong> ${q.question}</p>
-        ${answers.map(a => 
-          `<button class="answer-btn" onclick="checkAnswer('${a}', '${q.correct}')">${a}</button>`
+        ${answers.map(a =>
+          `<button class="answer-btn" onclick="checkAnswer('${encodeURIComponent(a)}', '${encodeURIComponent(q.correct)}')">${a}</button>`
         ).join('')}
+        <div style="margin-top:0.5rem; font-size:0.9rem; color:#3b4b5a;">
+          <em>${q.codebook}${q.coderef ? ' • ' + q.coderef : ''}</em>
+        </div>
       `;
     }
 
-    function checkAnswer(choice, correct) {
+    function showSummary() {
+      const container = document.getElementById('questionContainer');
+      let html = `<h2>Quiz Complete</h2><p>You got ${correctCount} of ${selectedQuestions.length} correct!</p>`;
+      html += `<table class="report-table">
+        <tr><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Result</th></tr>`;
+      userResponses.forEach(r => {
+        const mark = r.isCorrect ? '<span class="correct">✓</span>' : '<span class="incorrect">✗</span>';
+        html += `<tr><td>${r.question}</td><td>${r.chosen}</td><td>${r.correct}</td><td>${mark}</td></tr>`;
+      });
+      html += `</table>`;
+      container.innerHTML = html;
+    }
+
+    // ===== Flow =====
+    function startQuiz() {
+      if (!selectedCategory) return alert('Select a category first.');
+      if (!allRows.length) return alert('Upload a spreadsheet with approved questions.');
+
+      const diff = lc(document.getElementById('difficultyFilter').value);
+      const limit = parseInt(document.getElementById('questionCount').value, 10);
+
+      const pool = allRows.filter(r => {
+        if (r.maincategory !== selectedCategory) return false;
+        if (diff !== 'all' && lc(r.difficulty) !== diff) return false;
+        // must have 1 correct + 3 incorrects
+        if (!r.correct || !r.incorrect1 || !r.incorrect2 || !r.incorrect3) return false;
+        return true;
+      });
+
+      if (pool.length === 0) {
+        return alert('No approved questions match that filter.');
+      }
+
+      selectedQuestions = shuffle(pool).slice(0, limit);
+      currentIndex = 0;
+      correctCount = 0;
+      userResponses = [];
+
+      document.getElementById('panel').classList.add('hidden');
+      const qc = document.getElementById('questionContainer');
+      qc.classList.remove('hidden');
+      qc.innerHTML = '';
+      showQuestion();
+    }
+
+    function goBack() {
+      document.getElementById('questionContainer').classList.add('hidden');
+      document.getElementById('panel').classList.remove('hidden');
+      selectedQuestions = [];
+      currentIndex = 0;
+      correctCount = 0;
+      userResponses = [];
+    }
+
+    function checkAnswer(choiceEnc, correctEnc) {
+      const choice = decodeURIComponent(choiceEnc);
+      const correct = decodeURIComponent(correctEnc);
+      const q = selectedQuestions[currentIndex];
+
       userResponses.push({
-        question: selectedQuestions[currentIndex].question,
+        question: q.question,
         chosen: choice,
         correct: correct,
         isCorrect: choice === correct
@@ -252,28 +283,57 @@
       showQuestion();
     }
 
-    function goBack() {
-      document.getElementById('questionContainer').classList.add('hidden');
-      document.getElementById(currentCategory).classList.remove('active');
-    }
+    // ===== XLSX loader =====
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    function showSummary() {
-      const container = document.getElementById('questionContainer');
-      let html = `<h2>Quiz Complete</h2><p>You got ${correctCount} of ${selectedQuestions.length} correct!</p>`;
-      html += `<table class="report-table">
-        <tr><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Result</th></tr>`;
-      userResponses.forEach(resp => {
-        const mark = resp.isCorrect ? '<span class="correct">✓</span>' : '<span class="incorrect">✗</span>';
-        html += `<tr><td>${resp.question}</td><td>${resp.chosen}</td><td>${resp.correct}</td><td>${mark}</td></tr>`;
-      });
-      html += `</table>`;
-      container.innerHTML = html;
-    }
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
 
-    document.addEventListener('DOMContentLoaded', () => {
-      renderCategories();
-      switchTab('main');
+      const ws = wb.Sheets['Trivia Game'] || wb.Sheets[wb.SheetNames[0]];
+      if (!ws) return alert('No worksheet found.');
+
+      const raw = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      if (!raw.length) return alert('Sheet is empty.');
+
+      let headerMap;
+      try {
+        headerMap = validateHeaders(raw[0]);
+      } catch (err) {
+        console.error(err);
+        return alert(err.message);
+      }
+
+      // Normalize & enforce approval
+      const normalized = raw.map(r => normalizeRow(r, headerMap));
+      const approvedRows = normalized.filter(r => lc(r.approved) === 'yes');
+
+      if (!approvedRows.length) {
+        const hasApprovedCol = Object.keys(raw[0]).some(k => lc(k) === 'approved' || lc(k) === 'status');
+        const msg = hasApprovedCol
+          ? 'No rows with approved = "Yes" were found.'
+          : 'No "approved" (or "status") column found — add one with "Yes" to include rows.';
+        alert(msg);
+      }
+
+      // Final normalization and storage (approved only)
+      allRows = approvedRows.map(r => ({
+        ...r,
+        // keep your sheet’s values; normalize some for UI
+        maincategory: r.maincategory || 'General',
+        difficulty: lc(r.difficulty) || 'medium',
+        codebook: r.codebook || 'General',
+        coderef: r.coderef || (r.codebook ? `${r.codebook} (General)` : 'General (General)'),
+      }));
+
+      if (!allRows.length) return;
+
+      renderCategoriesFromData(allRows);
+      alert('Approved questions loaded. Pick a category to begin.');
     });
+
+    document.getElementById('startBtn').addEventListener('click', startQuiz);
   </script>
 </body>
 </html>
