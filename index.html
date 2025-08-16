@@ -1,145 +1,203 @@
-<script>
-  // 1) Your Apps Script Web App URL
-  const QUESTIONS_URL = 'https://script.google.com/macros/s/AKfycbwOqCs6AyZtKbbxk9AAt3txu1lTT9_5uLHO5lmK0ik_jy28lpq2Mo9CaElVZPy6fi6c/exec';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Structural Trivia</title>
+  <style>
+    body { font-family: 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: auto; padding: 2rem; background:#f7faff; color:#002b45; }
+    h1 { text-align: center; font-size: 3rem; font-weight: 800; font-family: "Arial Black", Impact, sans-serif; margin-bottom: 1rem; }
+    .hidden { display:none; }
+    .filter-btn { margin: .3rem; padding: .5rem 1rem; border: none; border-radius: 12px; background:#e6f0ff; cursor:pointer; }
+    .filter-btn.active { background:#007acc; color:#fff; }
+    .answer-btn { display:block; width:100%; margin:.5rem 0; padding:1rem 1.5rem; border:2px solid #007acc; border-radius:12px; background:#fff; text-align:left; cursor:pointer; }
+    .answer-btn:hover { background:#007acc; color:#fff; }
+    .controls { margin-top:1rem; display:flex; gap:1rem; align-items:center; flex-wrap:wrap; }
+    .report-table { width:100%; border-collapse:collapse; margin-top:1rem; }
+    .report-table th, .report-table td { border:1px solid #ccc; padding:.5rem; text-align:left; }
+    .correct { color:green; font-weight:700; }
+    .incorrect { color:red; font-weight:700; }
+  </style>
+</head>
+<body>
+  <h1>Structural Trivia</h1>
 
-  // ---- State ----
-  let allRows = [];
-  let selectedCategory = null;
-  let selectedQuestions = [];
-  let currentIndex = 0;
-  let correctCount = 0;
-  let userResponses = [];
+  <div id="panel">
+    <div id="categoryBar" style="margin-top:.5rem;"></div>
 
-  // ---- Utils ----
-  const norm = s => String(s ?? '').trim();
-  const lc   = s => norm(s).toLowerCase();
-  function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
-  function show(el){ el.classList.remove('hidden'); }
-  function hide(el){ el.classList.add('hidden'); }
+    <div class="controls">
+      <label>Difficulty:&nbsp;
+        <select id="difficultyFilter">
+          <option value="all" selected>All</option>
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </label>
 
-  // Lowercase all keys of an object (fixes MainCategory vs maincategory, etc.)
-  function lowerKeys(obj){
-    const out = {};
-    for (const [k,v] of Object.entries(obj)) out[k.toLowerCase()] = v;
-    return out;
-  }
+      <label>Questions:&nbsp;
+        <select id="questionCount">
+          <option value="5">5</option>
+          <option value="10" selected>10</option>
+          <option value="20">20</option>
+        </select>
+      </label>
 
-  function renderCategoriesFromData(rows) {
-    const cats = Array.from(new Set(rows.map(r => r.maincategory).filter(Boolean))).sort();
-    const bar = document.getElementById('categoryBar');
-    bar.innerHTML = cats.map(cat => `<button class="filter-btn" data-cat="${cat}">${cat}</button>`).join('');
-    bar.querySelectorAll('.filter-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        bar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedCategory = btn.dataset.cat;
-      });
-    });
-  }
+      <button id="startBtn" style="margin-left:auto; padding:.5rem 1rem;">Start Quiz</button>
+    </div>
+  </div>
 
-  // Build 2–4 choices from whatever is filled in
-  function buildChoicesForRow(q) {
-    const raw = [
-      { text: norm(q.correct),   isCorrect: true  },
-      { text: norm(q.incorrect1), isCorrect: false },
-      { text: norm(q.incorrect2), isCorrect: false },
-      { text: norm(q.incorrect3), isCorrect: false },
-    ].filter(c => !!c.text);
+  <div id="questionContainer" class="hidden"></div>
 
-    // De-dupe (case-insensitive)
-    const seen = new Set();
-    const unique = [];
-    for (const c of raw) {
-      const key = lc(c.text);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      unique.push(c);
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // 1) Your Apps Script Web App URL (approved-only JSON)
+    const QUESTIONS_URL = 'https://script.google.com/macros/s/AKfycbwOqCs6AyZtKbbxk9AAt3txu1lTT9_5uLHO5lmK0ik_jy28lpq2Mo9CaElVZPy6fi6c/exec';
+
+    // ---- State ----
+    let allRows = [];
+    let selectedCategory = null;
+    let selectedQuestions = [];
+    let currentIndex = 0;
+    let correctCount = 0;
+    let userResponses = [];
+
+    // ---- Utils ----
+    const norm = s => String(s ?? '').trim();
+    const lc   = s => norm(s).toLowerCase();
+    function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+    function show(el){ el.classList.remove('hidden'); }
+    function hide(el){ el.classList.add('hidden'); }
+
+    // Lowercase all keys of an object (fixes MainCategory vs maincategory, etc.)
+    function lowerKeys(obj){
+      const out = {};
+      for (const [k,v] of Object.entries(obj)) out[k.toLowerCase()] = v;
+      return out;
     }
-    return unique;
-  }
 
-  function showQuestion(){
-    const container = document.getElementById('questionContainer');
-    if (currentIndex >= selectedQuestions.length) return showSummary();
+    function renderCategoriesFromData(rows) {
+      const cats = Array.from(new Set(rows.map(r => r.maincategory).filter(Boolean))).sort();
+      const bar = document.getElementById('categoryBar');
+      bar.innerHTML = cats.map(cat => `<button class="filter-btn" data-cat="${cat}">${cat}</button>`).join('');
+      bar.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          bar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          selectedCategory = btn.dataset.cat;
+        });
+      });
+    }
 
-    const q = selectedQuestions[currentIndex];
-    let choices = buildChoicesForRow(q);
-    if (choices.length < 2) { currentIndex++; return showQuestion(); }
-    choices = shuffle(choices);
+    // Build 2–4 choices from whatever is filled in
+    function buildChoicesForRow(q) {
+      const raw = [
+        { text: norm(q.correct),    isCorrect: true  },
+        { text: norm(q.incorrect1), isCorrect: false },
+        { text: norm(q.incorrect2), isCorrect: false },
+        { text: norm(q.incorrect3), isCorrect: false },
+      ].filter(c => !!c.text);
 
-    container.innerHTML = `
-      <button onclick="goBack()" style="margin-bottom:1rem;background:#ccc;border:none;padding:0.5rem 1rem;border-radius:8px;">← Back</button>
-      <p><strong>Q${currentIndex + 1}:</strong> ${q.question}</p>
-      ${choices.map(c => `<button class="answer-btn" data-correct="${c.isCorrect}" onclick="checkAnswer(this)">${c.text}</button>`).join('')}
-      <div style="margin-top:0.5rem; font-size:0.9rem; color:#3b4b5a;">
-        <em>${q.codebook}${q.coderef ? ' • ' + q.coderef : ''}</em>
-      </div>
-    `;
-  }
+      // De-dupe (case-insensitive)
+      const seen = new Set();
+      const unique = [];
+      for (const c of raw) {
+        const key = lc(c.text);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        unique.push(c);
+      }
+      return unique;
+    }
 
-  function showSummary(){
-    const c = document.getElementById('questionContainer');
-    let html = `<h2>Quiz Complete</h2><p>You got ${correctCount} of ${selectedQuestions.length} correct!</p>`;
-    html += `<table class="report-table">
-      <tr><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Result</th></tr>`;
-    userResponses.forEach(r => {
-      const mark = r.isCorrect ? '<span class="correct">✓</span>' : '<span class="incorrect">✗</span>';
-      html += `<tr><td>${r.question}</td><td>${r.chosen}</td><td>${r.correct}</td><td>${mark}</td></tr>`;
+    function showQuestion(){
+      const container = document.getElementById('questionContainer');
+      if (currentIndex >= selectedQuestions.length) return showSummary();
+
+      const q = selectedQuestions[currentIndex];
+      let choices = buildChoicesForRow(q);
+      if (choices.length < 2) { currentIndex++; return showQuestion(); }
+      choices = shuffle(choices);
+
+      container.innerHTML = `
+        <button onclick="goBack()" style="margin-bottom:1rem;background:#ccc;border:none;padding:0.5rem 1rem;border-radius:8px;">← Back</button>
+        <p><strong>Q${currentIndex + 1}:</strong> ${q.question}</p>
+        ${choices.map(c => `<button class="answer-btn" data-correct="${c.isCorrect}" onclick="checkAnswer(this)">${c.text}</button>`).join('')}
+        <div style="margin-top:0.5rem; font-size:0.9rem; color:#3b4b5a;">
+          <em>${q.codebook || ''}${q.coderef ? ' • ' + q.coderef : ''}</em>
+        </div>
+      `;
+    }
+
+    function showSummary(){
+      const c = document.getElementById('questionContainer');
+      let html = `<h2>Quiz Complete</h2><p>You got ${correctCount} of ${selectedQuestions.length} correct!</p>`;
+      html += `<table class="report-table">
+        <tr><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Result</th></tr>`;
+      userResponses.forEach(r => {
+        const mark = r.isCorrect ? '<span class="correct">✓</span>' : '<span class="incorrect">✗</span>';
+        html += `<tr><td>${r.question}</td><td>${r.chosen}</td><td>${r.correct}</td><td>${mark}</td></tr>`;
+      });
+      html += `</table>`;
+      c.innerHTML = html;
+    }
+
+    function startQuiz(){
+      if (!selectedCategory) return alert('Select a category first.');
+      if (!allRows.length)   return alert('No approved questions loaded.');
+
+      const diff  = lc(document.getElementById('difficultyFilter').value);
+      const limit = parseInt(document.getElementById('questionCount').value, 10);
+
+      const pool = allRows.filter(r => {
+        if (r.maincategory !== selectedCategory) return false;
+        if (diff !== 'all' && lc(r.difficulty) !== diff) return false;
+        return buildChoicesForRow(r).length >= 2;  // allow Yes/No or 3-4 choice
+      });
+
+      if (!pool.length) return alert('No approved questions match that filter.');
+
+      selectedQuestions = shuffle(pool).slice(0, limit);
+      currentIndex = 0; correctCount = 0; userResponses = [];
+      hide(document.getElementById('panel'));
+      const qc = document.getElementById('questionContainer'); show(qc); qc.innerHTML = '';
+      showQuestion();
+    }
+
+    window.goBack = function(){ hide(document.getElementById('questionContainer')); show(document.getElementById('panel')); selectedQuestions=[]; currentIndex=0; correctCount=0; userResponses=[]; }
+    window.checkAnswer = function(btn){ const isCorrect = btn.dataset.correct === 'true'; const chosen = btn.textContent; const q = selectedQuestions[currentIndex];
+      userResponses.push({ question: q.question, chosen, correct: q.correct, isCorrect });
+      if (isCorrect) correctCount++; currentIndex++; showQuestion();
+    }
+
+    async function loadFromApi(){
+      const res = await fetch(QUESTIONS_URL + '?t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+
+      // normalize keys to lowercase once
+      const normalized = data.map(lowerKeys);
+
+      allRows = normalized.map(r => ({
+        ...r,
+        difficulty: lc(r.difficulty || 'medium'),
+        maincategory: r.maincategory || 'General',
+        codebook: r.codebook || 'General',
+        coderef: r.coderef || (r.codebook ? `${r.codebook} (General)` : ''),
+      }));
+
+      if (!allRows.length) throw new Error('API returned 0 rows.');
+      renderCategoriesFromData(allRows);
+      // console.log('Loaded rows:', allRows.length, allRows[0]);
+    }
+
+    // Hook up button and load
+    document.getElementById('startBtn').addEventListener('click', startQuiz);
+    loadFromApi().catch(err => {
+      console.error('API load failed:', err);
+      alert('Could not load questions from server. Check Web App access, sheet name, and Approved = Yes.');
     });
-    html += `</table>`;
-    c.innerHTML = html;
-  }
-
-  function startQuiz(){
-    if (!selectedCategory) return alert('Select a category first.');
-    if (!allRows.length)   return alert('No approved questions loaded.');
-
-    const diff  = lc(document.getElementById('difficultyFilter').value);
-    const limit = parseInt(document.getElementById('questionCount').value, 10);
-
-    const pool = allRows.filter(r => {
-      if (r.maincategory !== selectedCategory) return false;
-      if (diff !== 'all' && lc(r.difficulty) !== diff) return false;
-      return buildChoicesForRow(r).length >= 2;
-    });
-
-    if (!pool.length) return alert('No approved questions match that filter.');
-
-    selectedQuestions = shuffle(pool).slice(0, limit);
-    currentIndex = 0; correctCount = 0; userResponses = [];
-    hide(document.getElementById('panel'));
-    const qc = document.getElementById('questionContainer'); show(qc); qc.innerHTML = '';
-    showQuestion();
-  }
-
-  function goBack(){ hide(document.getElementById('questionContainer')); show(document.getElementById('panel')); selectedQuestions=[]; currentIndex=0; correctCount=0; userResponses=[]; }
-  function checkAnswer(btn){ const isCorrect = btn.dataset.correct === 'true'; const chosen = btn.textContent; const q = selectedQuestions[currentIndex];
-    userResponses.push({ question: q.question, chosen, correct: q.correct, isCorrect });
-    if (isCorrect) correctCount++; currentIndex++; showQuestion();
-  }
-
-  async function loadFromApi(){
-    const res = await fetch(QUESTIONS_URL + '?t=' + Date.now(), { cache: 'no-store' });
-    if (!res.ok) throw new Error(await res.text());
-    const data = await res.json();
-
-    // <— KEY FIX: normalize keys to lowercase so MainCategory/CodeRef/etc. always work
-    const normalized = data.map(lowerKeys);
-
-    // Treat fields consistently; DO NOT coerce unknown categories to "General"
-    allRows = normalized.map(r => ({
-      ...r,
-      difficulty: lc(r.difficulty || 'medium'),
-      maincategory: r.maincategory || 'General',
-      codebook: r.codebook || 'General',
-      coderef: r.coderef || (r.codebook ? `${r.codebook} (General)` : 'General (General)'),
-    }));
-
-    if (!allRows.length) throw new Error('API returned 0 rows.');
-    renderCategoriesFromData(allRows);
-    // console.debug('Loaded rows:', allRows.length, 'sample:', allRows[0]);
-  }
-
-  document.getElementById('startBtn').addEventListener('click', startQuiz);
-  (async()=>{ try { await loadFromApi(); } catch(err){ console.error('API load failed:', err); alert('Could not load questions from server.'); }})();
-</script>
+  });
+  </script>
+</body>
+</html>
