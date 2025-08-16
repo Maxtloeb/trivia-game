@@ -1,98 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Structural Trivia Game</title>
   <style>
-    body {
-      font-family: 'Segoe UI', Roboto, sans-serif;
-      max-width: 800px;
-      margin: auto;
-      padding: 2rem;
-      background-color: #f7faff;
-      color: #002b45;
-    }
-    h1 {
-      text-align: center;
-      font-size: 3rem;
-      font-weight: 800;
-      font-family: 'Arial Black', Impact, sans-serif;
-      letter-spacing: 0.02em;
-      margin-bottom: 1rem;
-    }
+    body { font-family: 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: auto; padding: 2rem; background: #f7faff; color:#002b45; }
+    h1 { text-align: center; font-size: 3rem; font-weight: 800; font-family: 'Arial Black', Impact, sans-serif; margin-bottom: 1rem; }
     .hidden { display: none; }
-    .filter-btn {
-      margin: 0.3rem;
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 12px;
-      background-color: #e6f0ff;
-      cursor: pointer;
-    }
-    .filter-btn.active { background-color: #007acc; color: white; }
-
-    .answer-btn {
-      display: block;
-      width: 100%;
-      margin: 0.5rem 0;
-      padding: 1rem 1.5rem;
-      font-size: 1rem;
-      line-height: 1.4;
-      border: 2px solid #007acc;
-      border-radius: 12px;
-      background-color: #fff;
-      cursor: pointer;
-      text-align: left;
-      transition: background-color 0.3s, color 0.3s;
-    }
-    .answer-btn:hover { background-color: #007acc; color: white; }
-
-    .report-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
-    .report-table th, .report-table td {
-      border: 1px solid #ccc;
-      padding: 0.5rem;
-      text-align: left;
-    }
-    .correct { color: green; font-weight: bold; }
-    .incorrect { color: red; font-weight: bold; }
-
-    .controls {
-      margin-top: 1rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;
-    }
-    .pill {
-      background:#fff; border:1px solid #c9d7e3; padding:0.5rem 0.75rem; border-radius:10px;
-    }
+    .filter-btn { margin: 0.3rem; padding: 0.5rem 1rem; border: none; border-radius: 12px; background: #e6f0ff; cursor: pointer; }
+    .filter-btn.active { background: #007acc; color: #fff; }
+    .answer-btn { display:block; width:100%; margin:0.5rem 0; padding:1rem 1.5rem; border:2px solid #007acc; border-radius:12px; background:#fff; text-align:left; cursor:pointer; }
+    .answer-btn:hover { background:#007acc; color:#fff; }
+    .controls { margin-top:1rem; display:flex; gap:1rem; align-items:center; flex-wrap:wrap; }
+    .report-table { width:100%; border-collapse:collapse; margin-top:1rem; }
+    .report-table th, .report-table td { border:1px solid #ccc; padding:0.5rem; text-align:left; }
+    .correct { color:green; font-weight:bold; } .incorrect { color:red; font-weight:bold; }
   </style>
-  <!-- SheetJS (reads .xlsx in the browser) -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <h1>Structural Trivia</h1>
 
-  <!-- Loader / Single-tab Filters -->
   <div id="panel">
-    <div class="pill">
-      <label><strong>Upload .xlsx:</strong>
-        <input id="fileInput" type="file" accept=".xlsx,.xls" />
-      </label>
-      <small style="margin-left:0.5rem;">Sheet name: <code>Trivia Game</code></small>
-    </div>
-
-    <div id="categoryBar" style="margin-top: 1rem;"></div>
+    <div id="categoryBar" style="margin-top: 0.5rem;"></div>
 
     <div class="controls">
-      <label for="difficultyFilter">Difficulty:&nbsp;</label>
-      <select id="difficultyFilter">
-        <option value="all" selected>All</option>
-        <option value="easy">Easy</option>
-        <option value="medium">Medium</option>
-        <option value="hard">Hard</option>
-      </select>
+      <label>Difficulty:&nbsp;
+        <select id="difficultyFilter">
+          <option value="all" selected>All</option>
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </label>
 
       <label>Questions:&nbsp;
         <select id="questionCount">
@@ -107,82 +47,30 @@
   </div>
 
   <div id="questionContainer" class="hidden"></div>
-  <div id="summary"></div>
 
   <script>
-    // ===== Spreadsheet contract (case-insensitive) =====
-    const REQUIRED_HEADERS = [
-      'question','correct','incorrect1','incorrect2','incorrect3',
-      'maincategory','difficulty','codebook','coderef','status'
-    ];
+    // ====== CONFIG ======
+    const QUESTIONS_URL = 'https://script.google.com/macros/s/AKfycbwOqCs6AyZtKbbxk9AAt3txu1lTT9_5uLHO5lmK0ik_jy28lpq2Mo9CaElVZPy6fi6c/exec';
 
-    // ===== State =====
-    let allRows = [];          // approved-only
+    // ====== STATE ======
+    let allRows = [];          // approved-only from API
     let selectedCategory = null;
     let selectedQuestions = [];
     let currentIndex = 0;
     let correctCount = 0;
     let userResponses = [];
 
-    // ===== Utils =====
+    // ====== UTILS ======
     const norm = s => String(s ?? '').trim();
     const lc = s => norm(s).toLowerCase();
+    function shuffle(arr){ const a = arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+    function show(el){ el.classList.remove('hidden'); } function hide(el){ el.classList.add('hidden'); }
 
-    function shuffle(arr) {
-      const a = arr.slice();
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-      return a;
-    }
-
-    function mapHeadersToRequired(obj) {
-      const map = {};
-      const keys = Object.keys(obj || {});
-      for (const k of keys) {
-        const nk = lc(k);
-        const hit = REQUIRED_HEADERS.find(h => h === nk);
-        if (hit) map[k] = hit;
-      }
-      return map;
-    }
-
-    function normalizeRow(raw, headerMap) {
-      const out = {};
-      for (const [orig, required] of Object.entries(headerMap)) {
-        out[required] = norm(raw[orig]);
-      }
-      // --- APPROVAL ENFORCEMENT ---
-      const approvedKey = Object.keys(raw).find(k => lc(k) === 'approved');
-      const statusKey   = Object.keys(raw).find(k => lc(k) === 'status'); // fallback
-      const approvedVal = approvedKey ? lc(raw[approvedKey])
-                        : statusKey   ? lc(raw[statusKey])
-                        : 'no'; // default to not approved if neither exists
-      out.approved = approvedVal; // keep lowercased
-      return out;
-    }
-
-    function validateHeaders(firstRow) {
-      const headerMap = mapHeadersToRequired(firstRow || {});
-      const present = new Set(Object.values(headerMap));
-      const missing = REQUIRED_HEADERS.filter(h => !present.has(h));
-      // We don't require 'approved' as a header, but we will enforce it below.
-      if (missing.length) {
-        // Only warn about the truly required quiz columns
-        const essentials = missing.join(', ');
-        if (essentials) throw new Error(`Missing required columns: ${essentials}`);
-      }
-      return headerMap;
-    }
-
-    // ===== UI builders =====
     function renderCategoriesFromData(rows) {
       const cats = Array.from(new Set(rows.map(r => r.maincategory).filter(Boolean))).sort();
       const html = cats.map(cat => `<button class="filter-btn" data-cat="${cat}">${cat}</button>`).join('');
       const bar = document.getElementById('categoryBar');
       bar.innerHTML = html;
-
       bar.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           bar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -195,41 +83,31 @@
     function showQuestion() {
       const container = document.getElementById('questionContainer');
       if (currentIndex >= selectedQuestions.length) return showSummary();
-
       const q = selectedQuestions[currentIndex];
       const answers = shuffle([q.correct, q.incorrect1, q.incorrect2, q.incorrect3].filter(Boolean));
-
       container.innerHTML = `
-        <button onclick="goBack()" style="margin-bottom:1rem;background:#ccc;border:none;padding:0.5rem 1rem;border-radius:8px;">
-          ← Back
-        </button>
+        <button onclick="goBack()" style="margin-bottom:1rem;background:#ccc;border:none;padding:0.5rem 1rem;border-radius:8px;">← Back</button>
         <p><strong>Q${currentIndex + 1}:</strong> ${q.question}</p>
-        ${answers.map(a =>
-          `<button class="answer-btn" onclick="checkAnswer('${encodeURIComponent(a)}', '${encodeURIComponent(q.correct)}')">${a}</button>`
-        ).join('')}
-        <div style="margin-top:0.5rem; font-size:0.9rem; color:#3b4b5a;">
-          <em>${q.codebook}${q.coderef ? ' • ' + q.coderef : ''}</em>
-        </div>
+        ${answers.map(a => `<button class="answer-btn" onclick="checkAnswer('${encodeURIComponent(a)}', '${encodeURIComponent(q.correct)}')">${a}</button>`).join('')}
+        <div style="margin-top:0.5rem; font-size:0.9rem; color:#3b4b5a;"><em>${q.codebook}${q.coderef ? ' • ' + q.coderef : ''}</em></div>
       `;
     }
 
     function showSummary() {
-      const container = document.getElementById('questionContainer');
+      const c = document.getElementById('questionContainer');
       let html = `<h2>Quiz Complete</h2><p>You got ${correctCount} of ${selectedQuestions.length} correct!</p>`;
-      html += `<table class="report-table">
-        <tr><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Result</th></tr>`;
+      html += `<table class="report-table"><tr><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Result</th></tr>`;
       userResponses.forEach(r => {
         const mark = r.isCorrect ? '<span class="correct">✓</span>' : '<span class="incorrect">✗</span>';
         html += `<tr><td>${r.question}</td><td>${r.chosen}</td><td>${r.correct}</td><td>${mark}</td></tr>`;
       });
       html += `</table>`;
-      container.innerHTML = html;
+      c.innerHTML = html;
     }
 
-    // ===== Flow =====
     function startQuiz() {
       if (!selectedCategory) return alert('Select a category first.');
-      if (!allRows.length) return alert('Upload a spreadsheet with approved questions.');
+      if (!allRows.length)   return alert('No approved questions loaded.');
 
       const diff = lc(document.getElementById('difficultyFilter').value);
       const limit = parseInt(document.getElementById('questionCount').value, 10);
@@ -237,103 +115,44 @@
       const pool = allRows.filter(r => {
         if (r.maincategory !== selectedCategory) return false;
         if (diff !== 'all' && lc(r.difficulty) !== diff) return false;
-        // must have 1 correct + 3 incorrects
-        if (!r.correct || !r.incorrect1 || !r.incorrect2 || !r.incorrect3) return false;
-        return true;
+        return r.correct && r.incorrect1 && r.incorrect2 && r.incorrect3;
       });
 
-      if (pool.length === 0) {
-        return alert('No approved questions match that filter.');
-      }
+      if (!pool.length) return alert('No approved questions match that filter.');
 
       selectedQuestions = shuffle(pool).slice(0, limit);
-      currentIndex = 0;
-      correctCount = 0;
-      userResponses = [];
-
-      document.getElementById('panel').classList.add('hidden');
-      const qc = document.getElementById('questionContainer');
-      qc.classList.remove('hidden');
-      qc.innerHTML = '';
+      currentIndex = 0; correctCount = 0; userResponses = [];
+      hide(document.getElementById('panel'));
+      const qc = document.getElementById('questionContainer'); show(qc); qc.innerHTML = '';
       showQuestion();
     }
 
-    function goBack() {
-      document.getElementById('questionContainer').classList.add('hidden');
-      document.getElementById('panel').classList.remove('hidden');
-      selectedQuestions = [];
-      currentIndex = 0;
-      correctCount = 0;
-      userResponses = [];
-    }
+    function goBack(){ hide(document.getElementById('questionContainer')); show(document.getElementById('panel')); selectedQuestions=[]; currentIndex=0; correctCount=0; userResponses=[]; }
+    function checkAnswer(choiceEnc, correctEnc){ const choice = decodeURIComponent(choiceEnc); const correct = decodeURIComponent(correctEnc); const q=selectedQuestions[currentIndex]; userResponses.push({question:q.question, chosen:choice, correct:correct, isCorrect: choice===correct}); if(choice===correct) correctCount++; currentIndex++; showQuestion(); }
 
-    function checkAnswer(choiceEnc, correctEnc) {
-      const choice = decodeURIComponent(choiceEnc);
-      const correct = decodeURIComponent(correctEnc);
-      const q = selectedQuestions[currentIndex];
-
-      userResponses.push({
-        question: q.question,
-        chosen: choice,
-        correct: correct,
-        isCorrect: choice === correct
-      });
-      if (choice === correct) correctCount++;
-      currentIndex++;
-      showQuestion();
-    }
-
-    // ===== XLSX loader =====
-    document.getElementById('fileInput').addEventListener('change', async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf, { type: 'array' });
-
-      const ws = wb.Sheets['Trivia Game'] || wb.Sheets[wb.SheetNames[0]];
-      if (!ws) return alert('No worksheet found.');
-
-      const raw = XLSX.utils.sheet_to_json(ws, { defval: '' });
-      if (!raw.length) return alert('Sheet is empty.');
-
-      let headerMap;
-      try {
-        headerMap = validateHeaders(raw[0]);
-      } catch (err) {
-        console.error(err);
-        return alert(err.message);
-      }
-
-      // Normalize & enforce approval
-      const normalized = raw.map(r => normalizeRow(r, headerMap));
-      const approvedRows = normalized.filter(r => lc(r.approved) === 'yes');
-
-      if (!approvedRows.length) {
-        const hasApprovedCol = Object.keys(raw[0]).some(k => lc(k) === 'approved' || lc(k) === 'status');
-        const msg = hasApprovedCol
-          ? 'No rows with approved = "Yes" were found.'
-          : 'No "approved" (or "status") column found — add one with "Yes" to include rows.';
-        alert(msg);
-      }
-
-      // Final normalization and storage (approved only)
-      allRows = approvedRows.map(r => ({
+    async function loadFromApi(){
+      const res = await fetch(QUESTIONS_URL + '?t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      if (!Array.isArray(data) || (data[0] && !('question' in data[0]))) throw new Error('Unexpected JSON shape from API.');
+      // The API already filtered to approved-only. Normalize a couple of fields for UI:
+      allRows = data.map(r => ({
         ...r,
-        // keep your sheet’s values; normalize some for UI
+        difficulty: lc(r.difficulty || 'medium'),
         maincategory: r.maincategory || 'General',
-        difficulty: lc(r.difficulty) || 'medium',
         codebook: r.codebook || 'General',
         coderef: r.coderef || (r.codebook ? `${r.codebook} (General)` : 'General (General)'),
       }));
-
-      if (!allRows.length) return;
-
+      if (!allRows.length) throw new Error('API returned 0 approved rows.');
       renderCategoriesFromData(allRows);
-      alert('Approved questions loaded. Pick a category to begin.');
-    });
+    }
 
     document.getElementById('startBtn').addEventListener('click', startQuiz);
+
+    (async function boot(){
+      try { await loadFromApi(); }
+      catch (err){ console.error('API load failed:', err); alert('Could not load questions from the server. Check your Web App permissions or sheet name.'); }
+    })();
   </script>
 </body>
 </html>
