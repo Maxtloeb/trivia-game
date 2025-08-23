@@ -33,6 +33,7 @@
           <option value="easy">Easy</option>
           <option value="medium">Medium</option>
           <option value="hard">Hard</option>
+          <option value="impossible">Impossible</option><!-- NEW -->
         </select>
       </label>
 
@@ -57,7 +58,7 @@
 
     // ====== STATE ======
     let allRows = [];
-    let selectedCategory = 'All'; // <-- default to All
+    let selectedCategory = 'All'; // default to All
     let selectedQuestions = [];
     let currentIndex = 0;
     let correctCount = 0;
@@ -70,7 +71,7 @@
     function show(el){ el.classList.remove('hidden'); }
     function hide(el){ el.classList.add('hidden'); }
 
-    // Normalize keys: lowercase + drop all non [a-z0-9]
+    // Normalize keys: lowercase + strip non-alphanumerics
     function normalizeKeys(obj){
       const out = {};
       for (const [k,v] of Object.entries(obj)) {
@@ -82,8 +83,8 @@
 
     function renderCategoriesFromData(rows) {
       const cats = Array.from(new Set(rows.map(r => r.maincategory).filter(Boolean))).sort();
-      const allCats = ['All', ...cats]; // <-- add All
       const bar = document.getElementById('categoryBar');
+      const allCats = ['All', ...cats]; // add All
       bar.innerHTML = allCats.map(cat =>
         `<button class="filter-btn${cat==='All'?' active':''}" data-cat="${cat}">${cat}</button>`
       ).join('');
@@ -146,8 +147,8 @@
       const limit = parseInt(document.getElementById('questionCount').value, 10);
 
       const pool = allRows.filter(r => {
-        if (selectedCategory !== 'All' && r.maincategory !== selectedCategory) return false; // <-- All bypass
-        if (diff !== 'all' && lc(r.difficulty) !== diff) return false;
+        if (selectedCategory !== 'All' && r.maincategory !== selectedCategory) return false; // All bypass
+        if (diff !== 'all' && lc(r.difficulty) !== diff) return false;                       // All bypass for difficulty
         return buildChoicesForRow(r).length >= 2;
       });
 
@@ -188,7 +189,7 @@
         maincategory: r.maincategory || 'General',
         codebook: r.codebook || 'General',
         coderef: r.coderef || (r.codebook ? `${r.codebook} (General)` : ''),
-      })).filter(r => lc(r.approved || r.status || '') === 'yes'); // ensure only approved
+      })).filter(r => lc(r.approved || r.status || '') === 'yes'); // only approved
 
       if (!allRows.length) throw new Error('API returned 0 approved rows.');
       renderCategoriesFromData(allRows);
