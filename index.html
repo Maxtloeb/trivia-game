@@ -57,7 +57,7 @@
 
     // ====== STATE ======
     let allRows = [];
-    let selectedCategory = null;
+    let selectedCategory = 'All'; // <-- default to All
     let selectedQuestions = [];
     let currentIndex = 0;
     let correctCount = 0;
@@ -71,7 +71,6 @@
     function hide(el){ el.classList.add('hidden'); }
 
     // Normalize keys: lowercase + drop all non [a-z0-9]
-    // "Main Category", "MainCategory", "main_category" -> "maincategory"
     function normalizeKeys(obj){
       const out = {};
       for (const [k,v] of Object.entries(obj)) {
@@ -83,8 +82,11 @@
 
     function renderCategoriesFromData(rows) {
       const cats = Array.from(new Set(rows.map(r => r.maincategory).filter(Boolean))).sort();
+      const allCats = ['All', ...cats]; // <-- add All
       const bar = document.getElementById('categoryBar');
-      bar.innerHTML = cats.map(cat => `<button class="filter-btn" data-cat="${cat}">${cat}</button>`).join('');
+      bar.innerHTML = allCats.map(cat =>
+        `<button class="filter-btn${cat==='All'?' active':''}" data-cat="${cat}">${cat}</button>`
+      ).join('');
       bar.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           bar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -139,13 +141,12 @@
     }
 
     function startQuiz(){
-      if (!selectedCategory) return alert('Select a category first.');
       if (!allRows.length)   return alert('No approved questions loaded.');
       const diff  = lc(document.getElementById('difficultyFilter').value);
       const limit = parseInt(document.getElementById('questionCount').value, 10);
 
       const pool = allRows.filter(r => {
-        if (r.maincategory !== selectedCategory) return false;
+        if (selectedCategory !== 'All' && r.maincategory !== selectedCategory) return false; // <-- All bypass
         if (diff !== 'all' && lc(r.difficulty) !== diff) return false;
         return buildChoicesForRow(r).length >= 2;
       });
@@ -159,8 +160,15 @@
     }
 
     // expose inline handlers
-    window.goBack = function(){ hide(document.getElementById('questionContainer')); show(document.getElementById('panel')); selectedQuestions=[]; currentIndex=0; correctCount=0; userResponses=[]; }
-    window.checkAnswer = function(btn){ const isCorrect = btn.dataset.correct === 'true'; const chosen = btn.textContent; const q = selectedQuestions[currentIndex];
+    window.goBack = function(){
+      hide(document.getElementById('questionContainer'));
+      show(document.getElementById('panel'));
+      selectedQuestions=[]; currentIndex=0; correctCount=0; userResponses=[];
+    }
+    window.checkAnswer = function(btn){
+      const isCorrect = btn.dataset.correct === 'true';
+      const chosen = btn.textContent;
+      const q = selectedQuestions[currentIndex];
       userResponses.push({ question: q.question, chosen, correct: q.correct, isCorrect });
       if (isCorrect) correctCount++; currentIndex++; showQuestion();
     }
@@ -176,12 +184,11 @@
 
       allRows = normalized.map(r => ({
         ...r,
-        // expect keys: question, correct, incorrect1/2/3, maincategory, difficulty, codebook, coderef
         difficulty: lc(r.difficulty || 'medium'),
         maincategory: r.maincategory || 'General',
         codebook: r.codebook || 'General',
         coderef: r.coderef || (r.codebook ? `${r.codebook} (General)` : ''),
-      }));
+      })).filter(r => lc(r.approved || r.status || '') === 'yes'); // ensure only approved
 
       if (!allRows.length) throw new Error('API returned 0 approved rows.');
       renderCategoriesFromData(allRows);
