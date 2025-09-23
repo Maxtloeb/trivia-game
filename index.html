@@ -1,210 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Structural Engineering Trivia</title>
-  <style>
-    body{font-family:Segoe UI,Roboto,sans-serif;max-width:800px;margin:auto;padding:2rem;background:#f7faff;color:#002b45}
-    h1{text-align:center;font-size:3rem;font-weight:800;font-family:"Arial Black",Impact,sans-serif;margin-bottom:1rem}
-    .hidden{display:none}
-    .filter-btn{margin:.3rem;padding:.5rem 1rem;border:none;border-radius:12px;background:#e6f0ff;cursor:pointer}
-    .filter-btn.active{background:#007acc;color:#fff}
-    .answer-btn{display:block;width:100%;margin:.5rem 0;padding:1rem 1.5rem;border:2px solid #007acc;border-radius:12px;background:#fff;text-align:left;cursor:pointer}
-    .answer-btn:hover{background:#007acc;color:#fff}
-    .controls{margin-top:1rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
-    .report-table{width:100%;border-collapse:collapse;margin-top:1rem}
-    .report-table th,.report-table td{border:1px solid #ccc;padding:.5rem;text-align:left}
-    .correct{color:green;font-weight:700}.incorrect{color:red;font-weight:700}
-    #status{margin:8px 0;color:#3b4b5a;font-size:.95rem}
-  </style>
+  <meta charset="utf-8" />
+  <title>Structural Trivia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <h1>Structural Engineering Trivia</h1>
+  <div class="container">
+    <h1>Structural Trivia</h1>
 
-  <div id="panel">
-    <div id="status">Loading approved questions…</div>
-    <div id="categoryBar" style="margin-top:.5rem;"></div>
+    <section class="card">
+      <h2>Filters</h2>
+      <div class="row">
+        <label>Main Category:
+          <select id="mainCategory">
+            <option value="">All</option>
+            <option>Steel</option>
+            <option>Wood</option>
+            <option>Masonry</option>
+            <option>Concrete</option>
+            <option>General Engineering</option>
+            <option>General Code</option>
+            <option>Seismic and Wind</option>
+          </select>
+        </label>
 
-    <div class="controls">
-      <label>Difficulty:&nbsp;
-        <select id="difficultyFilter">
-          <option value="all" selected>All</option>
-          <option value="easy">Easy</option>
-          <option value="medium">Medium</option>
-          <option value="hard">Hard</option>
-          <option value="impossible">Impossible</option><!-- NEW -->
-        </select>
-      </label>
+        <label>Codebook:
+          <input id="codebook" type="text" placeholder="e.g., ACI 318-19" />
+        </label>
 
-      <label>Questions:&nbsp;
-        <select id="questionCount">
-          <option value="5">5</option>
-          <option value="10" selected>10</option>
-          <option value="20">20</option>
-        </select>
-      </label>
+        <label>Difficulty:
+          <select id="difficulty">
+            <option value="">All</option>
+            <option>Easy</option>
+            <option>Medium</option>
+            <option>Hard</option>
+          </select>
+        </label>
 
-      <button id="startBtn" style="margin-left:auto;padding:.5rem 1rem">Start Quiz</button>
-    </div>
+        <button id="loadBtn">Load Questions</button>
+      </div>
+    </section>
+
+    <section id="status" class="card"></section>
+
+    <section id="quiz" class="card" hidden>
+      <div id="qImage"></div>
+      <div id="qText" class="q"></div>
+      <div id="choices" class="choices"></div>
+      <div class="row">
+        <button id="prevBtn">Prev</button>
+        <div id="progress"></div>
+        <button id="nextBtn">Next</button>
+      </div>
+    </section>
+
+    <section id="results" class="card" hidden>
+      <h2>Results</h2>
+      <p id="summary"></p>
+      <button id="restartBtn">Start New Quiz</button>
+    </section>
   </div>
 
-  <div id="questionContainer" class="hidden"></div>
-
-  <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    // ====== CONFIG ======
-    const QUESTIONS_URL = 'https://script.google.com/macros/s/AKfycbwOqCs6AyZtKbbxk9AAt3txu1lTT9_5uLHO5lmK0ik_jy28lpq2Mo9CaElVZPy6fi6c/exec';
-
-    // ====== STATE ======
-    let allRows = [];
-    let selectedCategory = 'All'; // default to All
-    let selectedQuestions = [];
-    let currentIndex = 0;
-    let correctCount = 0;
-    let userResponses = [];
-
-    // ====== UTILS ======
-    const norm = s => String(s ?? '').trim();
-    const lc   = s => norm(s).toLowerCase();
-    function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
-    function show(el){ el.classList.remove('hidden'); }
-    function hide(el){ el.classList.add('hidden'); }
-
-    // Normalize keys: lowercase + strip non-alphanumerics
-    function normalizeKeys(obj){
-      const out = {};
-      for (const [k,v] of Object.entries(obj)) {
-        const nk = k.toLowerCase().replace(/[^a-z0-9]/g,'');
-        out[nk] = v;
-      }
-      return out;
-    }
-
-    function renderCategoriesFromData(rows) {
-      const cats = Array.from(new Set(rows.map(r => r.maincategory).filter(Boolean))).sort();
-      const bar = document.getElementById('categoryBar');
-      const allCats = ['All', ...cats]; // add All
-      bar.innerHTML = allCats.map(cat =>
-        `<button class="filter-btn${cat==='All'?' active':''}" data-cat="${cat}">${cat}</button>`
-      ).join('');
-      bar.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          bar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          selectedCategory = btn.dataset.cat;
-        });
-      });
-      document.getElementById('status').textContent =
-        cats.length ? `Loaded ${rows.length} approved questions across ${cats.length} categories.` :
-                      'No approved questions found. Check your sheet (Approved/Status = "Yes").';
-    }
-
-    // Build 2–4 choices from whatever is filled in
-    function buildChoicesForRow(q) {
-      const raw = [
-        { text: norm(q.correct),    isCorrect: true  },
-        { text: norm(q.incorrect1), isCorrect: false },
-        { text: norm(q.incorrect2), isCorrect: false },
-        { text: norm(q.incorrect3), isCorrect: false },
-      ].filter(c => !!c.text);
-      const seen = new Set(), unique = [];
-      for (const c of raw) { const key = lc(c.text); if (seen.has(key)) continue; seen.add(key); unique.push(c); }
-      return unique;
-    }
-
-    function showQuestion(){
-      const container = document.getElementById('questionContainer');
-      if (currentIndex >= selectedQuestions.length) return showSummary();
-      const q = selectedQuestions[currentIndex];
-      let choices = buildChoicesForRow(q);
-      if (choices.length < 2) { currentIndex++; return showQuestion(); }
-      choices = shuffle(choices);
-
-      container.innerHTML = `
-        <button onclick="goBack()" style="margin-bottom:1rem;background:#ccc;border:none;padding:.5rem 1rem;border-radius:8px;">← Back</button>
-        <p><strong>Q${currentIndex + 1}:</strong> ${q.question}</p>
-        ${choices.map(c => `<button class="answer-btn" data-correct="${c.isCorrect}" onclick="checkAnswer(this)">${c.text}</button>`).join('')}
-        <div style="margin-top:.5rem;font-size:.9rem;color:#3b4b5a;"><em>${q.codebook || ''}${q.coderef ? ' • ' + q.coderef : ''}</em></div>
-      `;
-    }
-
-    function showSummary(){
-      const c = document.getElementById('questionContainer');
-      let html = `<h2>Quiz Complete</h2><p>You got ${correctCount} of ${selectedQuestions.length} correct!</p>`;
-      html += `<table class="report-table"><tr><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Result</th></tr>`;
-      userResponses.forEach(r => {
-        const mark = r.isCorrect ? '<span class="correct">✓</span>' : '<span class="incorrect">✗</span>';
-        html += `<tr><td>${r.question}</td><td>${r.chosen}</td><td>${r.correct}</td><td>${mark}</td></tr>`;
-      });
-      html += `</table>`;
-      c.innerHTML = html;
-    }
-
-    function startQuiz(){
-      if (!allRows.length)   return alert('No approved questions loaded.');
-      const diff  = lc(document.getElementById('difficultyFilter').value);
-      const limit = parseInt(document.getElementById('questionCount').value, 10);
-
-      const pool = allRows.filter(r => {
-        if (selectedCategory !== 'All' && r.maincategory !== selectedCategory) return false; // All bypass
-        if (diff !== 'all' && lc(r.difficulty) !== diff) return false;                       // All bypass for difficulty
-        return buildChoicesForRow(r).length >= 2;
-      });
-
-      if (!pool.length) return alert('No approved questions match that filter.');
-      selectedQuestions = shuffle(pool).slice(0, limit);
-      currentIndex = 0; correctCount = 0; userResponses = [];
-      hide(document.getElementById('panel'));
-      const qc = document.getElementById('questionContainer'); show(qc); qc.innerHTML = '';
-      showQuestion();
-    }
-
-    // expose inline handlers
-    window.goBack = function(){
-      hide(document.getElementById('questionContainer'));
-      show(document.getElementById('panel'));
-      selectedQuestions=[]; currentIndex=0; correctCount=0; userResponses=[];
-    }
-    window.checkAnswer = function(btn){
-      const isCorrect = btn.dataset.correct === 'true';
-      const chosen = btn.textContent;
-      const q = selectedQuestions[currentIndex];
-      userResponses.push({ question: q.question, chosen, correct: q.correct, isCorrect });
-      if (isCorrect) correctCount++; currentIndex++; showQuestion();
-    }
-
-    async function loadFromApi(){
-      const res = await fetch(QUESTIONS_URL + '?t=' + Date.now(), { cache: 'no-store' });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      if (!Array.isArray(data)) throw new Error('API did not return an array');
-
-      // normalize keys once (handles spaces/underscores/casing)
-      const normalized = data.map(normalizeKeys);
-
-      allRows = normalized.map(r => ({
-        ...r,
-        difficulty: lc(r.difficulty || 'medium'),
-        maincategory: r.maincategory || 'General',
-        codebook: r.codebook || 'General',
-        coderef: r.coderef || (r.codebook ? `${r.codebook} (General)` : ''),
-      })).filter(r => lc(r.approved || r.status || '') === 'yes'); // only approved
-
-      if (!allRows.length) throw new Error('API returned 0 approved rows.');
-      renderCategoriesFromData(allRows);
-    }
-
-    document.getElementById('startBtn').addEventListener('click', startQuiz);
-
-    loadFromApi().catch(err => {
-      console.error('API load failed:', err);
-      document.getElementById('status').textContent = 'Could not load from server. Check Web App access, sheet name, and Approved/Status = "Yes".';
-      alert('Could not load questions from server.');
-    });
-  });
-  </script>
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
-
-
